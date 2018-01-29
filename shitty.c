@@ -12,12 +12,18 @@
 static const int TCP_BACKLOG = 1;
 
 enum FrameType {
+    SETTINGS = 0x04,
     GOAWAY = 0x07
 };
 
 enum ErrorCode {
     NO_ERROR = 0x00,
     PROTOCOL_ERROR = 0x01
+};
+
+struct __attribute__((packed)) setting {
+    uint16_t identifier;
+    uint32_t value;
 };
 
 // length doesn't include the length of the frame header
@@ -87,10 +93,18 @@ static ssize_t write_goaway_frame(
             sizeof(frame));
 }
 
+static ssize_t write_settings_frame(int fd, uint8_t flags, void* data, size_t len) {
+    return write_frame(fd, 0u, SETTINGS, flags, data, len);
+}
+
 // Talk to a client once we've determined that it wants to UPGRADE!!!
 static void http2(int client) {
     // We're now talking in HTTP/2 frames
-    //
+    // First step is a mandatory SETTINGS frame
+    write_settings_frame(client, 0x00, NULL, 0);
+    // Ack incoming settings
+    //write_settings_frame(client, 0x01, NULL, 0);
+
     // Naturally we want to tell the client to GOAWAY.
     // NO_ERROR indicates clean shutdown.
     ssize_t err = write_goaway_frame(client, 0u, NO_ERROR);

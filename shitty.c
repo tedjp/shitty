@@ -158,6 +158,9 @@ static void handle(int client) {
 
     // TODO: Pass HTTP2-Settings request-header
     http2(client);
+
+    if (close(client) == -1)
+        perror("Failed to close client");
 }
 
 static void run(int s) {

@@ -11,11 +11,91 @@
 
 static const int TCP_BACKLOG = 1;
 
+enum FrameType {
+    GOAWAY = 0x07
+};
+
+enum ErrorCode {
+    NO_ERROR = 0x00,
+    PROTOCOL_ERROR = 0x01
+};
+
+// length doesn't include the length of the frame header
+static ssize_t write_frame_header(int fd, uint32_t length, uint8_t type, uint8_t flags, uint32_t stream_id) {
+    if (stream_id & (1u << 31)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    struct __attribute__((packed)) frame_header {
+        uint32_t nbo_length_type; // u24(length), u8(type)
+        uint8_t flags;
+        uint32_t nbo_stream_id; // actually u1(r) + u31(id)
+    } frame_header;
+
+    if (length > (1 << 23)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    frame_header.nbo_length_type = htonl(length << 8 | type);
+    frame_header.flags = flags;
+    frame_header.nbo_stream_id = htonl(stream_id);
+
+    return write(fd, &frame_header, sizeof(frame_header));
+}
+
+static ssize_t write_frame(
+        int sock,
+        uint32_t stream_id,
+        enum FrameType type,
+        uint8_t flags,
+        void* frame_data,
+        size_t len)
+{
+    ssize_t r = write_frame_header(sock, len, type, flags, stream_id);
+    if (r == -1)
+        return -1;
+
+    return write(sock, frame_data, len);
+}
+
+static ssize_t write_goaway_frame(
+        int sock,
+        uint32_t last_stream_id,
+        uint32_t error_code)
+{
+    struct __attribute__((packed)) goaway_frame {
+        uint32_t nbo_r_last_stream_id;
+        uint32_t nbo_error_code;
+    } frame;
+
+    if (last_stream_id & (1u << 31)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    frame.nbo_r_last_stream_id = htonl(last_stream_id);
+    frame.nbo_error_code = htonl((uint32_t)error_code);
+
+    return write_frame(
+            sock,
+            0u, // stream ID is always 0 for GOAWAY
+            GOAWAY,
+            0x00, // GOAWAY has no flags defined
+            &frame,
+            sizeof(frame));
+}
+
 // Talk to a client once we've determined that it wants to UPGRADE!!!
 static void http2(int client) {
     // We're now talking in HTTP/2 frames
     //
     // Naturally we want to tell the client to GOAWAY.
+    // NO_ERROR indicates clean shutdown.
+    ssize_t err = write_goaway_frame(client, 0u, NO_ERROR);
+    if (err == -1)
+        perror("Failed to write GOAWAY");
 }
 
 static int upgrade(int client) {

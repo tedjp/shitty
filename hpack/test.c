@@ -31,6 +31,11 @@ static int encode_tests(void) {
         return 1;
     }
 
+    if (encode_number(42, 8, buf, 1) != 0 || buf[0] != 42) {
+        fprintf(stderr, "Failed to encode 42 on 8 bits\n");
+        return 1;
+    }
+
     // Check that short buffer is not overrun
     uint8_t shortbuf[1];
     if (encode_number(1337, 5, shortbuf, sizeof(shortbuf)) >= 0) {

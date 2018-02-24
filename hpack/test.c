@@ -22,17 +22,28 @@ static int encode_tests(void) {
 
 
     if (encode_number(1337, 5, buf, sizeof(buf)) != 2) {
-        fprintf(stderr, "Failed to encode 1337 into 2 extra bytes");
+        fprintf(stderr, "Failed to encode 1337 into 2 extra bytes\n");
         return 1;
     }
 
     if (buf[0] != 31 || buf[1] != 154 || buf[2] != 10) {
-        fprintf(stderr, "Failed to encode 1337 correctly");
+        fprintf(stderr, "Failed to encode 1337 correctly\n");
         return 1;
     }
 
     // Check that short buffer is not overrun
-    // Other invalid inputs; prefix < 1 or > 8
+    uint8_t shortbuf[1];
+    if (encode_number(1337, 5, shortbuf, sizeof(shortbuf)) >= 0) {
+        fprintf(stderr, "Erroneously able to encode 1337 with a 5-bit prefix\n");
+        return 1;
+    }
+
+    if (encode_number(64, 5, shortbuf, sizeof(shortbuf)) >= 0) {
+        fprintf(stderr, "Erroneously able to encode 64 with a 5-bit prefix\n");
+        return 1;
+    }
+
+    // TODO: Other invalid inputs; prefix < 1 or > 8
 
     return 0;
 }

@@ -59,6 +59,7 @@ int decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *
 
 // Return number of *extra* bytes used for encoding (not including the bits in
 // the prefix/first byte). Returns zero for all values that fit in the prefix.
+// buflen *includes* the length of the first byte (which is not counted in the return value)
 ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, size_t buflen) {
     if (!buf || buflen == 0 || prefix_bits > 8 || prefix_bits < 1)
         return -1; // maybe -INTERNAL_ERROR
@@ -79,7 +80,7 @@ ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, 
     while (number > 0x80) {
         ++octet;
 
-        if (octet > buflen)
+        if (octet >= buflen)
             return -1; // maybe -INTERNAL_ERROR or the calculated required buffer length?
 
         buf[octet] = 0x80 | number % 0x80;
@@ -87,6 +88,10 @@ ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, 
     }
 
     ++octet;
+
+    if (octet >= buflen)
+        return -1; // maybe -INTERNAL_ERROR or the calculated required buffer length?
+
     buf[octet] = number;
 
     return octet;

@@ -9,12 +9,12 @@ static int encode_tests(void) {
     // Examples from HPACK (RFC 7541)
     buf[0] = '\0';
     if (encode_number(10, 5, buf, sizeof(buf)) != 0) {
-        fprintf(stderr, "failed to encode 10 into 5 bits");
+        fprintf(stderr, "failed to encode 10 into 5 bits\n");
         return 1;
     }
 
     if (buf[0] != 10) {
-        fprintf(stderr, "failed to encode 10 into 5 bits as 10");
+        fprintf(stderr, "failed to encode 10 into 5 bits as 10\n");
         return 1;
     }
 

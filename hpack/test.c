@@ -8,7 +8,7 @@ static int encode_tests(void) {
 
     // Examples from HPACK (RFC 7541)
     buf[0] = '\0';
-    if (encode_number(10, 5, buf, sizeof(buf)) != 0) {
+    if (encode_number(10, 5, buf, sizeof(buf)) != 1) {
         fprintf(stderr, "failed to encode 10 into 5 bits\n");
         return 1;
     }
@@ -20,8 +20,7 @@ static int encode_tests(void) {
 
     // Also test that top 3 bits are unchanged!
 
-
-    if (encode_number(1337, 5, buf, sizeof(buf)) != 2) {
+    if (encode_number(1337, 5, buf, sizeof(buf)) != 3) {
         fprintf(stderr, "Failed to encode 1337 into 2 extra bytes\n");
         return 1;
     }
@@ -31,7 +30,7 @@ static int encode_tests(void) {
         return 1;
     }
 
-    if (encode_number(42, 8, buf, 1) != 0 || buf[0] != 42) {
+    if (encode_number(42, 8, buf, 1) != 1 || buf[0] != 42) {
         fprintf(stderr, "Failed to encode 42 on 8 bits\n");
         return 1;
     }

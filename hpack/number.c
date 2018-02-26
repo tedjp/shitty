@@ -19,6 +19,7 @@ static uint8_t mask_from_bits(uint_fast8_t bits) {
     return 0xff >> (8 - bits);
 }
 
+// TODO: Need to return how many bytes were used.
 // bits: how many bits to use from the first field. Often 7 in HPACK.
 int decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *number) {
     if (len == 0 || bits > 8)
@@ -57,9 +58,9 @@ int decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *
     return PROTOCOL_ERROR; // too big
 }
 
-// Return number of *extra* bytes used for encoding (not including the bits in
-// the prefix/first byte). Returns zero for all values that fit in the prefix.
-// buflen *includes* the length of the first byte (which is not counted in the return value)
+// Return number of bytes used for encoding (including the bits in
+// the prefix/first byte). Returns 1 for all values that fit in the prefix.
+// buflen *includes* the length of the first byte.
 ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, size_t buflen) {
     if (!buf || buflen == 0 || prefix_bits > 8 || prefix_bits < 1)
         return -1; // maybe -INTERNAL_ERROR
@@ -69,7 +70,7 @@ ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, 
     if (number < mask) {
         // Mask off any existing bits that might have been non-zero.
         buf[0] = (buf[0] & ~mask) | number;
-        return 0;
+        return 1;
     }
 
     buf[0] |= mask;
@@ -94,5 +95,5 @@ ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, 
 
     buf[octet] = number;
 
-    return octet;
+    return octet + 1; // include the first, partial octet
 }

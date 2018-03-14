@@ -14,8 +14,12 @@ int main(void) {
     char decoded[sizeof(input) * 8 / 5 + 1];
 
     ssize_t len = huffman_decode(input, sizeof(input), 8, decoded, sizeof(decoded) - 1);
-    if (len >= 0)
-        decoded[len] = '\0';
+    if (len < 0) {
+        fprintf(stderr, "Failed to decode input\n");
+        return 1;
+    }
+
+    decoded[len] = '\0';
 
     if (strcmp(decoded, expect) != 0) {
         fprintf(stderr,

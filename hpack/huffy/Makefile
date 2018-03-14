@@ -1,6 +1,6 @@
 .PHONY: all check clean
 
-all: bitbuf.o encode.o
+all: bitbuf.o encode.o decode.o
 
 encode-table.c: huffcodes.txt make-etable.sh
 	./make-etable.sh < $< > $@
@@ -18,6 +18,9 @@ bitbuf.o: bitbuf.c bitbuf.h
 
 bitbuf-test: bitbuf-test.c bitbuf.o
 	gcc -Wall -g -o $@ $^
+
+decode.o: decode.c decode.h
+	gcc -Wall -g -c -o $@ $<
 
 check: encode-test bitbuf-test
 	./encode-test

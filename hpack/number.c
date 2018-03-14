@@ -35,7 +35,7 @@ int decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *
     if (field != mask)
         return NO_ERROR;
 
-    intmax_t mult = 1;
+    uintmax_t mult = 1;
 
     for (size_t i = 1; i < len && i <= MAX_OCTETS; ++i) {
         field = buf[i] & 0x7f;
@@ -46,7 +46,6 @@ int decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *
             return NO_ERROR; // end of value
         }
 
-        // XXX: Ensure this isn't optimized away
         if (mult << 7 < mult) {
             // overflow
             return INTERNAL_ERROR;

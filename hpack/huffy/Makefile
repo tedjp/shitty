@@ -22,9 +22,13 @@ bitbuf-test: bitbuf-test.c bitbuf.o
 decode.o: decode.c decode.h
 	gcc -Wall -g -c -o $@ $<
 
-check: encode-test bitbuf-test
+decode-test: decode-test.c decode.o bitbuf.o
+	gcc -Wall -g -o $@ $^
+
+check: encode-test bitbuf-test decode-test
 	./encode-test
 	./bitbuf-test
+	./decode-test
 
 clean:
-	rm -f encode-test bitbuf-test *.o encode-table.c
+	rm -f encode-test bitbuf-test decode-test *.o encode-table.c

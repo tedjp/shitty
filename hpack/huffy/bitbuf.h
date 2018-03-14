@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct bitbuf {
     uint8_t octet, next, next_bits;
 };
@@ -19,3 +23,7 @@ inline uint8_t bb_peek(const struct bb_reader *bbf) {
 }
 
 uint8_t bb_next(struct bb_reader *bbr, uint8_t seek_bits);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

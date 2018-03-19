@@ -16,8 +16,6 @@ struct encv {
 // I guess these could be stored in reverse byte order for efficiency on
 // little-endian hardware.
 #include "encode-table.c"
-// unused
-//static const struct encv EOS = { 0x3fffffff, 30 };
 
 // Once the size is known it can be prefixed with the H[uffman] bit and the
 // 7-bit prefixed length prefix.

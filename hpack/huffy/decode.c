@@ -1426,11 +1426,12 @@ static const struct fast_find_symbol shortbits23[224] = {
     { 0xff, 26 },
     { 0xff, 26 },
     { 0xff, 26 },
-    // 101111 [26]: INVALID INPUT
-    { INVALID23, INVALID23 },
-    { INVALID23, INVALID23 },
-    { INVALID23, INVALID23 },
-    { INVALID23, INVALID23 },
+    // 1011110 [27] (203)
+    { 203, 27 },
+    { 203, 27 },
+    // 1011111 [27] (204)
+    { 204, 27 },
+    { 204, 27 },
     // 1100000 [27] (211)
     { 0xd3, 27 },
     { 0xd3, 27 },
@@ -1654,7 +1655,7 @@ static const struct fast_find_symbol shortbits3[128] = {
 // eight-fifths of the encoded input length.
 
 // first_octet_bits must be [1-8]
-ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bits, char *dest, size_t destlen) {
+ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bits, uint8_t *dest, size_t destlen) {
     if (UNLIKELY(!buf || !dest || first_octet_bits < 1 || first_octet_bits > 8))
         return -3;
 
@@ -1662,11 +1663,11 @@ ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bi
 
     bb_reader_init(&reader, buf, buflen);
 
-    if (first_octet_bits != 0)
+    if (first_octet_bits != 8)
         bb_next(&reader, 8 - first_octet_bits);
 
-    char *const begin = dest;
-    char *const end = dest + destlen;
+    uint8_t *const begin = dest;
+    uint8_t *const end = dest + destlen;
 
     // TODO: It's probably faster to have an explicit end-of-input check on
     // the bb_reader than to have it return ffs when the end of the input is
@@ -1744,10 +1745,7 @@ ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bi
         bb_next(&reader, 8);
 
         if (octet != 0xfe && octet != 0xff) { // LIKELY
-            sym = shortbits23[octet << 4 | bb_peek(&reader)];
-            if (UNLIKELY(sym.octet == INVALID23))
-                return -2; // Invalid code
-
+            sym = shortbits23[(uint8_t)(octet << 4) | bb_peek(&reader) >> 4];
             *dest = sym.octet;
             ++dest;
 
@@ -1757,7 +1755,6 @@ ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bi
             continue;
         }
 
-        bb_next(&reader, 8);
         // See the documentation on the shortbits3 table
         // tldr: It's 7 bits (a septet).
         octet = ((octet << 6) & 64) | (bb_peek(&reader) >> 2);
@@ -1782,5 +1779,6 @@ ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bi
         return dest - begin;
     }
 
+    // FIXME: If at end of input, this is not an error.
     return -1; // destination buffer too small
 }

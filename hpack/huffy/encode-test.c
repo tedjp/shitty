@@ -8,11 +8,10 @@ int main(void) {
         0x8c, 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff
     };
 
-    const char *input = "www.example.com";
-
+    const uint8_t input[] = "www.example.com";
     uint8_t buf[123];
 
-    ssize_t len = huffman_encode(input, buf, sizeof(buf));
+    ssize_t len = huffman_encode(input, sizeof(input) - 1, buf, sizeof(buf));
 
     if (len < 0) {
         fprintf(stderr, "huffman_encode failed\n");

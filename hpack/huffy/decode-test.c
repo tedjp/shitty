@@ -11,7 +11,7 @@ static const uint8_t input[] = {
 static const char expect[] = "Mon, 21 Oct 2013 20:13:21 GMT";
 
 int main(void) {
-    char decoded[sizeof(input) * 8 / 5 + 1];
+    uint8_t decoded[sizeof(input) * 8 / 5];
 
     ssize_t len = huffman_decode(input, sizeof(input), 8, decoded, sizeof(decoded) - 1);
     if (len < 0) {
@@ -19,14 +19,14 @@ int main(void) {
         return 1;
     }
 
-    decoded[len] = '\0';
-
-    if (strcmp(decoded, expect) != 0) {
+    if (memcmp(decoded, expect, len) != 0) {
         fprintf(stderr,
-                "Decoded Huffman string to length %zd: %s, but expected length %zd: %s\n",
-                len, decoded,
-                sizeof(expect) - 1,
-                expect);
+                "Decoded Huffman string to length %zd, but expected length %zd\n",
+                len, sizeof(expect) - 1);
+        fprintf(stderr, "byte  xpct  got\n");
+        for (size_t i = 0; i < (len < sizeof(expect) - 1 ? len : sizeof(expect) - 1); ++i) {
+            fprintf(stderr, "%4zu: 0x%02hhx 0x%02hhx\n", i + 1, expect[i], decoded[i]);
+        }
         return 1;
     }
 

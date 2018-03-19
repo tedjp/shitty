@@ -25,10 +25,16 @@ decode.o: decode.c decode.h
 decode-test: decode-test.c decode.o bitbuf.o
 	gcc -Wall -g -o $@ $^
 
-check: encode-test bitbuf-test decode-test
-	./encode-test
-	./bitbuf-test
-	./decode-test
+random-test: random-test.c encode.o decode.o bitbuf.o ../number.c
+	gcc -Wall -g -o $@ $^
+
+TESTS = bitbuf-test encode-test decode-test random-test
+check: $(TESTS)
+	set -e; \
+	for t in $(TESTS); do \
+		echo Executing $$t; \
+		./$$t; \
+	done
 
 clean:
-	rm -f encode-test bitbuf-test decode-test *.o encode-table.c
+	rm -f $(TESTS) *.o encode-table.c

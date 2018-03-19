@@ -22,14 +22,14 @@ struct encv {
 // Once the size is known it can be prefixed with the H[uffman] bit and the
 // 7-bit prefixed length prefix.
 // The string is always left-aligned using the full byte.
-static ssize_t encode(const char *str, uint8_t *buf, size_t buflen) {
+static ssize_t encode(const uint8_t *input, size_t input_len, uint8_t *buf, size_t buflen) {
     // must always be [0-7]
     uint_fast8_t existing_bits = 0;
     uint8_t partial = 0; // partial octet
     size_t outi = 0;
 
-    for (size_t i = 0; str[i]; ++i) {
-        const struct encv encv = etable[(unsigned char)str[i]];
+    for (size_t i = 0; i < input_len; ++i) {
+        const struct encv encv = etable[input[i]];
         uint32_t huffcode = encv.value;
         uint_fast8_t bits = encv.bits;
 
@@ -66,7 +66,6 @@ static ssize_t encode(const char *str, uint8_t *buf, size_t buflen) {
             buf[outi] = (uint8_t)(huffcode >> (bits - 8));
             ++outi;
 
-            huffcode = huffcode >> 8;
             bits -= 8;
         }
 
@@ -94,9 +93,9 @@ static ssize_t encode(const char *str, uint8_t *buf, size_t buflen) {
     return (ssize_t)outi;
 }
 
-#define MAX_HUFF_STR 4096
+#define MAX_HUFF_STR 8192
 
-ssize_t huffman_encode(const char *str, uint8_t *buf, size_t buflen) {
+ssize_t huffman_encode(const uint8_t *input, size_t input_len, uint8_t *buf, size_t buflen) {
     // Alternatively this could encode into a user-supplied buffer or just
     // allocate exactly the length of the non-coded input (since it will be
     // discarded if the Huffman coding is longer anyway).
@@ -106,8 +105,9 @@ ssize_t huffman_encode(const char *str, uint8_t *buf, size_t buflen) {
     // doesn't have to be copied. If it ends up having length >= 127,
     // memmove() the string after figuring out how long the length prefix is
     // (then set the length prefix).
+    // FIXME: This is kind of a bad limitation.
     uint8_t huffstr[MAX_HUFF_STR];
-    ssize_t len = encode(str, huffstr, sizeof(huffstr));
+    ssize_t len = encode(input, input_len, huffstr, sizeof(huffstr));
 
     if (len < 0)
         return len;

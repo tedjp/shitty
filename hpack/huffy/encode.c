@@ -4,17 +4,17 @@
 #include "encode.h"
 #include "../number.h"
 
-// To save memory each encoded value could be stored as a uin32_t,
-// where if the top bit is set then the next 7 bits indicate the bit length
-// and the top 8 (or 16) bits are implicitly all-ones, but it probably
-// just makes it slower than using twice as much memory.
+
+// Future optimizations:
+// - Remove `bits` from the structure and store it separately, keyed by input
+//   character (saves 1 kiB; 256 bytes in `bits` and  768 bytes in padding).
+// - Store static tables in native byte order (ie. swap for little-endian
+//   machines) to avoid bswapping each multibyte symbol.
 struct encv {
     uint_fast32_t value;
     uint_fast8_t bits;
 };
 
-// I guess these could be stored in reverse byte order for efficiency on
-// little-endian hardware.
 #include "encode-table.c"
 
 // Once the size is known it can be prefixed with the H[uffman] bit and the

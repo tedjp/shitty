@@ -91,49 +91,50 @@ static ssize_t encode(const uint8_t *input, size_t input_len, uint8_t *buf, size
     return (ssize_t)outi;
 }
 
-#define MAX_HUFF_STR 8192
-
 ssize_t huffman_encode(const uint8_t *input, size_t input_len, uint8_t *buf, size_t buflen) {
-    // Alternatively this could encode into a user-supplied buffer or just
-    // allocate exactly the length of the non-coded input (since it will be
-    // discarded if the Huffman coding is longer anyway).
+    if (buflen < 1) {
+        // No room for length + data
+        return -1;
+    }
+
+    // Encode directly into the caller's buffer.
     //
-    // TODO: Alternative-alternative: Encode the string starting its output
-    // at buf[1] in the hope that the encoded length will be <127 and
-    // doesn't have to be copied. If it ends up having length >= 127,
-    // memmove() the string after figuring out how long the length prefix is
-    // (then set the length prefix).
-    // FIXME: This is kind of a bad limitation.
-    uint8_t huffstr[MAX_HUFF_STR];
-    ssize_t len = encode(input, input_len, huffstr, sizeof(huffstr));
+    // Hopes that the encoded length will be <128, if not the encoded string
+    // will be shifted forward in the buffer by whatever the length of the
+    // number prefix is.
+    ssize_t len = encode(input, input_len, buf + 1, buflen - 1);
 
     if (len < 0)
         return len;
 
-    buf[0] = 0x80; // set Huffman bit
-
     size_t stlen = (size_t) len;
 
-    ssize_t nlen = encode_number(stlen, 7, buf, buflen);
+    // If the encoded length is >= 127, the encoded string has to be moved
+    // right by as many bytes as the encoded number will take up.
+
+    // Encode the number and determine how long it really is.
+    // Largest encoded 64-bit value is 10 octets which we determine to be the
+    // biggest number we care to support.
+    uint8_t encoded_number[10];
+    ssize_t nlen = encode_number(stlen, 7, encoded_number,
+            sizeof(encoded_number));
     if (nlen < 0)
         return nlen;
-
-    // Advance past the length prefix (+1 to advance past buf[0] which is not
-    // included in encode_number's return value.
-    buf += nlen;
-    buflen -= nlen;
-
-    if (__builtin_expect(stlen > buflen, 0)) {
-        // No longer room for encoded string
-        return -1;
-    }
-
-    memcpy(buf, huffstr, stlen);
 
     // Check for integer overflow before adding both lengths
     if (__builtin_expect(SSIZE_MAX - len < nlen, 0)) {
         return -1;
     }
+
+    if (nlen > 1) {
+        memmove(buf + nlen, buf + 1, stlen);
+    }
+
+    // Copy the encoded number in
+    memcpy(buf, encoded_number, nlen);
+
+    // Set Huffman bit
+    buf[0] |= 0x80;
 
     return nlen + len;
 }

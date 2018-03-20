@@ -73,8 +73,7 @@ int main(void) {
 
     fprintf(stderr, "Skipping %zu length-prefix octets\n", start);
 
-    // FIXME: +4 is CHEATING
-    uint8_t decoded[sizeof(data)+4];
+    uint8_t decoded[sizeof(data)];
     ssize_t decsz = huffman_decode(encoded + start, encsz - start, 8, decoded, sizeof(decoded));
 
     if (decsz != sizeof(data)) {

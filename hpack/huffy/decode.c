@@ -1679,6 +1679,9 @@ ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bi
     // the end-of-string check is added separately.
 
     while (dest != end) {
+        if (bb_eos(&reader))
+            return dest - begin;
+
         uint8_t octet = bb_peek(&reader);
 
         struct fast_find_symbol sym = shortbits0[octet];
@@ -1779,6 +1782,5 @@ ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bi
         return dest - begin;
     }
 
-    // FIXME: If at end of input, this is not an error.
-    return -1; // destination buffer too small
+    return bb_eos(&reader) ? dest - begin : -1; // destination buffer too small
 }

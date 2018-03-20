@@ -16,6 +16,10 @@ static void bb_load_next(struct bitbuf *bb, uint8_t discard_bits, const uint8_t 
         // load another octet
         uint8_t loaded;
         if (UNLIKELY(*buf == end)) {
+            if (bb->eos_after_bits == -1) {
+                // first eos
+                bb->eos_after_bits = 8 + bb->next_bits;
+            }
             // EOS bits
             loaded = 0xff;
         } else {
@@ -32,10 +36,46 @@ static void bb_load_next(struct bitbuf *bb, uint8_t discard_bits, const uint8_t 
         bb->next <<= discard_bits;
         bb->next_bits -= discard_bits;
     }
+
+    if (bb->eos_after_bits != -1) {
+        if (discard_bits > bb->eos_after_bits)
+            bb->eos_after_bits = 0;
+        else
+            bb->eos_after_bits -= discard_bits;
+    }
+}
+
+// This function is __attribute__((const))
+bool bb_eos(const struct bb_reader *bbr) {
+    // EOS if either eos_after_bits == 0
+    // or all bits are one.
+    // Potentially have to check both the current octet and the next bits,
+    // depending on how many bits there are to EOS.
+    // In general, it's likely that only when eos_after_bits < 8
+    // will it actually be EOS. Earlier bits likey to have zeroes.
+    // Alternatively could check that pos != end
+    if (LIKELY(bbr->bb.eos_after_bits == -1))
+        return false;
+
+    if (bbr->bb.eos_after_bits == 0)
+        return true;
+
+    // Otherwise check whether all bits are one
+
+    if (bbr->bb.eos_after_bits > 8) {
+        // Check next bits
+        uint8_t mask = 0xff << (8 - bbr->bb.eos_after_bits % 8);
+        if ((bbr->bb.next & mask) != mask)
+            return false; // found a zero bit
+    }
+
+    uint8_t mask = 0xff << (8 - bbr->bb.eos_after_bits);
+    return (bbr->bb.octet & mask) == mask;
 }
 
 void bb_reader_init(struct bb_reader *bbr, const uint8_t *buf, size_t buflen) {
     memset(&bbr->bb, 0, sizeof(bbr->bb));
+    bbr->bb.eos_after_bits = -1;
     bbr->bb.next_bits = 8; // push through the first non-input octet
     bbr->pos = buf;
     bbr->end = buf + buflen;

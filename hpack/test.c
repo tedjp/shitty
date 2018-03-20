@@ -84,6 +84,41 @@ static int decode_tests(void) {
     return r;
 }
 
+int sequence_tests() {
+    // In particular we want to test the boundary conditions
+    // around 2^7 & 2^14, so at least 16384.
+    uint8_t buf[8];
+    for (uintmax_t i = 0; i < 100000; ++i) {
+        ssize_t len = encode_number(i, 7, buf, sizeof(buf));
+        if (len < 1) {
+            fprintf(stderr, "Failed to encode %"PRIuMAX"\n", i);
+            return 1;
+        }
+
+        uintmax_t decoded = ~i;
+        if (decode_number(buf, sizeof(buf), 7, &decoded) != 0) {
+            fprintf(stderr, "Failed to decode encoded %" PRIuMAX "\n", i);
+            return 1;
+        }
+        if (decoded != i) {
+            fprintf(stderr, "Decode mismatch; encoded %" PRIuMAX
+                    ", decoded %" PRIuMAX "\n",
+                    i, decoded);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+// TODO: Check values close to SSIZE_MAX.
+
 int main(void) {
-    return encode_tests() == 0 && decode_tests() == 0 ? 0 : 1;
+    if (encode_tests())
+        return 1;
+    if (decode_tests())
+        return 1;
+    if (sequence_tests())
+        return 1;
+    return 0;
 }

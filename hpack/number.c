@@ -77,7 +77,7 @@ ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, 
     number -= mask;
 
     ssize_t octet = 0;
-    while (number > 0x80) {
+    while (number >= 0x80) {
         ++octet;
 
         if (octet >= buflen)

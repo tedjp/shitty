@@ -1,16 +1,11 @@
+#include "error.h"
 #include "number.h"
 
-// FIXME: delete/move
-enum {
-    NO_ERROR,
-    PROTOCOL_ERROR,
-    INTERNAL_ERROR
-};
-
-// Maximum number of *full* octets to decode as a number.
-// 64-bit UINTMAX_MAX requires up to 10 octets plus the prefix
-// (which could be only 1 or 2 bits)
-#define MAX_OCTETS sizeof(uintmax_t) + 2
+// Maximum number of octets to decode as a number, including the first
+// which might be as short as 1 bit.
+// 64-bit UINTMAX_MAX requires 10 octets:
+// 9 full octets for 63 bits (63 ÷ 7 = 9) plus one bit = 10 octets.
+#define MAX_OCTETS 10
 
 __attribute__((const))
 static uint8_t mask_from_bits(uint_fast8_t bits) {
@@ -19,21 +14,22 @@ static uint8_t mask_from_bits(uint_fast8_t bits) {
     return 0xff >> (8 - bits);
 }
 
-// TODO: Need to return how many bytes were used.
-// bits: how many bits to use from the first field. Often 7 in HPACK.
-int decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *number) {
+// bits: how many of the least significant bits to use from the first octet.
+// returns how many bytes were read (including the first)
+// or negative error code
+ssize_t decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *number) {
     if (len == 0 || bits > 8)
-        return PROTOCOL_ERROR;
+        return -PROTOCOL_ERROR;
 
     if (number == NULL || !buf)
-        return INTERNAL_ERROR;
+        return -INTERNAL_ERROR;
 
     uint_fast8_t mask = mask_from_bits(bits);
     uint_fast8_t field = buf[0] & mask;
 
     *number = field;
     if (field != mask)
-        return NO_ERROR;
+        return 1; // just used first octet
 
     uintmax_t mult = 1;
 
@@ -43,18 +39,18 @@ int decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *
 
         if (!(buf[i] & 0x80)) {
             // Last field (most significant byte)
-            return NO_ERROR; // end of value
+            return i + 1; // end of value
         }
 
         if (mult << 7 < mult) {
             // overflow
-            return INTERNAL_ERROR;
+            return -INTERNAL_ERROR;
         }
 
         mult = mult << 7;
     }
 
-    return PROTOCOL_ERROR; // too big
+    return -PROTOCOL_ERROR; // too big
 }
 
 // Return number of bytes used for encoding (including the bits in

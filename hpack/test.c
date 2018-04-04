@@ -68,10 +68,10 @@ static int decode_tests(void) {
 
     for (size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); ++i) {
         uintmax_t number = INTMAX_MAX;
-        int err = decode_number(inputs[i].bytes, inputs[i].len, inputs[i].bits, &number);
-        if (err) {
+        ssize_t used = decode_number(inputs[i].bytes, inputs[i].len, inputs[i].bits, &number);
+        if (used != inputs[i].len) {
             fprintf(stderr, "Failed to decode input %zu\n", i + 1);
-            r = err;
+            r = -1;
         }
 
         if (number != inputs[i].expect) {
@@ -96,7 +96,7 @@ int sequence_tests() {
         }
 
         uintmax_t decoded = ~i;
-        if (decode_number(buf, sizeof(buf), 7, &decoded) != 0) {
+        if (decode_number(buf, sizeof(buf), 7, &decoded) != len) {
             fprintf(stderr, "Failed to decode encoded %" PRIuMAX "\n", i);
             return 1;
         }

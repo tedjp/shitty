@@ -1,5 +1,6 @@
 #include "bitbuf.h"
 #include "decode.h"
+#include "../number.h"
 
 struct fast_find_symbol {
     uint8_t octet;
@@ -1655,7 +1656,22 @@ static const struct fast_find_symbol shortbits3[128] = {
 // eight-fifths of the encoded input length.
 
 // first_octet_bits must be [1-8]
-ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bits, uint8_t *dest, size_t destlen) {
+// XXX: first_octet_bits is always 8 in HPACK.
+// The returned length is the length of the *decoded* string.
+// This is weird and surprising.
+// But in HPACK all strings are length-prefixed, so you already knew how long
+// the input was anyway.
+// XXX: Maybe change the API to return the used length; take destlen as a
+// pointer that is updated to the actual length of the decoded content.
+// Then we'd also need to keep track of how many octets were actually used in
+// order to return that info.
+ssize_t huffman_decode(
+        const uint8_t *buf,
+        size_t buflen,
+        uint8_t first_octet_bits,
+        uint8_t *dest,
+        size_t destlen)
+{
     if (UNLIKELY(!buf || !dest || first_octet_bits < 1 || first_octet_bits > 8))
         return -3;
 
@@ -1663,7 +1679,7 @@ ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bi
 
     bb_reader_init(&reader, buf, buflen);
 
-    if (first_octet_bits != 8)
+    if (UNLIKELY(first_octet_bits != 8))
         bb_next(&reader, 8 - first_octet_bits);
 
     uint8_t *const begin = dest;
@@ -1783,4 +1799,86 @@ ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bi
     }
 
     return bb_eos(&reader) ? dest - begin : -1; // destination buffer too small
+}
+
+static ssize_t string_decode_common(
+        const uint8_t *buf,
+        size_t buflen,
+        uint8_t **destp,
+        size_t *destlenp)
+{
+    if (buflen < 1)
+        return -1;
+
+    const bool huff = (buf[0] & 0x80);
+
+    uintmax_t number = 0;
+    ssize_t len = decode_number(buf, len, 7, &number);
+    if (len < 1) {
+        return -1;
+    }
+
+    if (buflen - len < number)
+        return -1; // input buffer too short
+
+    if (*destp == NULL) {
+        // Allocate.
+        //
+        // Decoded string should be at most 8÷5+1 the length of the encoded
+        // buffer, otherwise the sender would have used raw encoding, but it
+        // could be as much as 30÷8+1 as long if the peer elected to use
+        // Huffman coding and encoded only the longest symbols.
+        if (huff) {
+            // Don't care about integer overflow; the buffer will just be
+            // too short and the decode will fail. But it's an unrealistically
+            // large input anyway.
+            *destlenp = number * 30 / 8 + 1;
+        } else {
+            *destlenp = number;
+        }
+        *destp = malloc(*destlenp);
+
+        if (*destp == NULL) {
+            *destlenp = 0;
+            return -1; // ENOMEM
+        }
+    } else {
+        if (destlen < number)
+            return -1; // output buffer too short
+    }
+
+    const uint8_t *string_start = buf + len;
+    size_t string_buf_len = buflen - len;
+
+    if (huff)
+        return huffman_decode(string_start, string_buf_len, 8, dest, destlen);
+
+    // raw octets
+    memcpy(dest, string_start, number);
+    return len + number;
+}
+
+ssize_t string_decode(
+        const uint8_t *buf,
+        size_t buflen,
+        uint8_t *dest,
+        size_t destlen)
+{
+    return string_decode_common(buf, buflen, &dest, &destlen);
+}
+
+ssize_t string_decode_alloc(
+        const uint8_t *buf,
+        size_t buflen,
+        uint8_t **destp,
+        size_t *destlenp)
+{
+    if (*destp) {
+        free(*destp);
+        *destp = NULL;
+    }
+
+    *destlenp = 0;
+
+    return string_decode_common(buf, buflen, destp, destlenp);
 }

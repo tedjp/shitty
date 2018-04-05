@@ -12,15 +12,17 @@ public:
     Header(std::string&& n, std::string&& v);
     const std::string& name() const { return name_; }
     const std::string& value() const { return value_; }
-    void setValue(const std::string& v) { value_ = v; }
+    void value(const std::string& v) { value_ = v; }
+    void value(std::string&& v) { value_ = std::move(v); }
 };
 
 class InternalHeader {
 private:
-    std::string name_, value_, name_encoded_, value_encoded_;
-    // Can't do this; indices change.
-    //unsigned index; // 0 = not indexed
-    bool never_indexed;
+    std::string name_, value_;
+    // Encoded values may be raw or Huffman coded, and always include the HPACK
+    // length prefix.
+    mutable std::string name_encoded_, value_encoded_;
+    bool never_indexed_;
 public:
     InternalHeader(
             const std::string& name,
@@ -34,28 +36,28 @@ public:
             const std::string& value_encoded,
             bool never_indexed = false
             );
+    InternalHeader(
+            std::string&& name,
+            std::string&& value,
+            std::string&& name_encoded,
+            std::string&& value_encoded,
+            bool never_indexed = false
+            );
+    explicit InternalHeader(const Header& h);
     const std::string& name() const { return name_; }
     const std::string& value() const { return value_; }
+    void value(const std::string& v, const std::string& encoded_value = std::string());
+    void value(std::string&& v, std::string&& encoded_value = std::string());
     Header header() const;
     unsigned hpack_size() const;
-};
-
-class ITable {
-public:
-    virtual Header
-        get(unsigned index) const = 0;
-
-    // Look for the given header in the static table and return the index (or
-    // zero if not found) and whether the value matches.
-    // Used when encoding a header block to encode a header as an index.
-    virtual std::pair<unsigned, bool>
-        find(const Header& h) const = 0;
+    const std::string& name_encoded() const;
+    const std::string& value_encoded() const;
 };
 
 // For initial implementation just use vector::insert() at the beginning,
 // but later on make it an adjustable-length ring buffer where only the
 // start number (0 index) changes.
-class DynamicTable: public ITable {
+class DynamicTable {
 private:
     static const unsigned start_ = 62; // RFC 7541
     unsigned size_octets_ = 4096; // RFC 7540
@@ -66,31 +68,33 @@ private:
 public:
     DynamicTable();
 
-    Header get(unsigned index) const override;
-    std::pair<unsigned, bool> find(const Header& h) const override;
+    InternalHeader get(unsigned index) const;
+    std::pair<unsigned, bool> find(const Header& h) const;
     void insert(InternalHeader&& header);
+    void insert(const InternalHeader& header);
     void resize(unsigned new_hpack_size);
 };
 
-class StaticTable: public ITable {
+class StaticTable {
 public:
     StaticTable();
 
     Header
-        get(unsigned index) const override;
+        get(unsigned index) const;
     std::pair<unsigned, bool>
-        find(const Header& h) const override;
+        find(const Header& h) const;
 };
 
-class HeaderTable: public ITable {
+class HeaderTable {
 private:
     StaticTable stable_;
     DynamicTable dtable_;
 
 public:
-    Header get(unsigned index) const override;
+    InternalHeader get(unsigned index) const;
     std::pair<unsigned, bool>
-        find(const Header& h) const override;
+        find(const Header& h) const;
+    void insert(const InternalHeader& h) { dtable_.insert(h); }
 };
 
 class RBuf {
@@ -111,27 +115,29 @@ public:
     uint8_t operator*() const { return data_[0]; }
 };
 
-// Decode a literal, either raw or Huffman-coded.
-std::string decode_string_from_rbuf(RBuf& rbuf);
-
 class HeaderDecoder {
 private:
     HeaderTable table_;
 
     // TODO: Implement
-    std::vector<Header> parseHeaderFrame(RBuf& buf);
+    std::vector<InternalHeader> parseHeaderFrame(RBuf& buf);
 
 private:
-    Header decode(RBuf& buf);
+    // These need to return an InternalHeader in case the header was a
+    // never-indexed header and you're writing a proxy that's going to forward
+    // it.
+    InternalHeader decode(RBuf& buf);
 
     // § 6.1
-    Header decode_indexed(RBuf& buf);
+    InternalHeader decode_indexed(RBuf& buf);
     // § 6.2.1
-    Header decode_literal_incremental(RBuf& buf);
+    InternalHeader decode_literal_incremental(RBuf& buf);
+    // Helper
+    InternalHeader decode_literal_indexed(unsigned index, RBuf& buf);
     // § 6.2.2
-    Header decode_literal_without_indexing(RBuf& buf);
+    InternalHeader decode_literal_without_indexing(RBuf& buf);
     // § 6.2.3
-    Header decode_literal_never_indexed(RBuf& buf);
+    InternalHeader decode_literal_never_indexed(RBuf& buf);
     // § 6.3
     void dynamic_table_resize(RBuf& buf);
 };

@@ -1,7 +1,9 @@
 #include <cassert>
+#include <cstring>
 #include <stdexcept>
 
 #include "huffy/decode.h"
+#include "huffy/encode.h"
 
 #include "header.h"
 #include "number.h"
@@ -9,6 +11,10 @@
 using std::string;
 using std::vector;
 using std::pair;
+
+// TODO: Use `using u8string = std::basic_string<uint8_t>` or with C++17
+// `using bstring = std::basic_string<std::byte>` instead of regular string with
+// reinterpret_cast<>s.
 
 struct static_table_entry {
     const char *name, *value;
@@ -177,7 +183,28 @@ InternalHeader::InternalHeader(
     value_(value),
     name_encoded_(name_encoded),
     value_encoded_(value_encoded),
-    never_indexed(never_indexed)
+    never_indexed_(never_indexed)
+{}
+
+InternalHeader::InternalHeader(
+        std::string&& name,
+        std::string&& value,
+        std::string&& name_encoded,
+        std::string&& value_encoded,
+        bool never_indexed):
+    name_(std::move(name)),
+    value_(std::move(value)),
+    name_encoded_(std::move(name_encoded)),
+    value_encoded_(std::move(value_encoded)),
+    never_indexed_(never_indexed)
+{}
+
+InternalHeader::InternalHeader(const Header& h):
+    name_(h.name()),
+    value_(h.value()),
+    name_encoded_(),
+    value_encoded_(),
+    never_indexed_(false)
 {}
 
 Header
@@ -190,11 +217,99 @@ InternalHeader::hpack_size() const {
     return 32 + name_.size() + value_.size();
 }
 
+void
+InternalHeader::value(const std::string& v, const std::string& encoded_value) {
+    value_ = v;
+    value_encoded_ = encoded_value;
+}
+
+void
+InternalHeader::value(std::string&& v, std::string&& encoded_value) {
+    value_ = std::move(v);
+    value_encoded_ = std::move(encoded_value);
+}
+
+// This might turn out to be a useful general purpose function.
+static string hpack_encode_string(const string& s) {
+    string coded(10 + s.size(), '\0');
+
+    ssize_t len = huffman_encode(
+            reinterpret_cast<const uint8_t*>(s.data()),
+            s.size(),
+            reinterpret_cast<uint8_t*>(&coded[0]),
+            coded.size());
+
+    // Determining which one is longer is a bit tricky; huffman_encode()
+    // includes the length prefix in its encoded version so we might need to
+    // figure out how long the length prefix on the raw version is before
+    // determining which is shorter.
+
+    if (len > 0) {
+        coded.resize(len); // truncate to actual length
+        coded.shrink_to_fit();
+
+        if (coded.size() <= s.size()) {
+            // Coded version is smaller even including its length prefix
+            // (if they're currently equal, adding a length prefix to the raw
+            // string would make it longer)
+            return coded;
+        }
+    }
+
+    // Either encode failed (len < 0) or not sure which will be shorter.
+    uint8_t raws_length_prefix[10];
+
+    ssize_t raws_length_prefix_length = encode_number(s.size(), 7,
+            raws_length_prefix, sizeof(raws_length_prefix));
+
+    if (raws_length_prefix_length < 0) {
+        // Failed to encode the length prefix :)
+        if (len > 0) // Huffman coding worked at least
+            return coded;
+        else
+            throw std::runtime_error("Failed to encode string");
+    }
+
+    unsigned raw_with_length_prefix_length = raws_length_prefix_length + s.size();
+    if (len < 0 || raw_with_length_prefix_length < len) {
+        // Use raw. But reusing the `coded` buffer since it's already allocated.
+        // (Returned string needs a length prefix)
+        coded.resize(raw_with_length_prefix_length);
+        coded.shrink_to_fit();
+
+        memcpy(&coded[0], raws_length_prefix, raws_length_prefix_length);
+        memcpy(&coded[raws_length_prefix_length], s.data(), s.size());
+
+        return coded;
+    }
+
+    // Huffcoded version is shorter
+    return coded;
+}
+
+const string&
+InternalHeader::name_encoded() const {
+    if (!name_encoded_.empty())
+        return name_encoded_;
+
+    name_encoded_ = hpack_encode_string(name_);
+    return name_encoded_;
+}
+
+const string&
+InternalHeader::value_encoded() const {
+    if (!value_encoded_.empty())
+        return value_encoded_;
+
+    value_encoded_ = hpack_encode_string(name_);
+    return value_encoded_;
+}
+
 DynamicTable::DynamicTable() {
     table_.reserve(64);
 }
 
-Header
+InternalHeader
 DynamicTable::get(unsigned index) const {
     if (index < start_)
         throw std::out_of_range("requested static table index from dynamic table");
@@ -204,7 +319,7 @@ DynamicTable::get(unsigned index) const {
     if (index >= table_.size())
         throw std::out_of_range("dynamic table index out of range");
 
-    return table_[index].header();
+    return table_[index];
 }
 
 // Size of the table in octets according to HPACK.
@@ -221,6 +336,13 @@ DynamicTable::hpack_size() const {
     return s;
 }
 
+void
+DynamicTable::insert(const InternalHeader& header) {
+    InternalHeader h(header);
+    return insert(std::move(h));
+}
+
+// XXX: This is probably only used via the const& version
 void
 DynamicTable::insert(InternalHeader&& header) {
     unsigned newh_size = header.hpack_size();
@@ -274,10 +396,10 @@ StaticTable::get(unsigned index) const {
 
 // TODO StaticTable::find()
 
-Header
+InternalHeader
 HeaderTable::get(unsigned index) const {
     // StaticTable validates index == 0
-    return index < 62 ? stable_.get(index) : dtable_.get(index);
+    return index < 62 ? InternalHeader(stable_.get(index)) : dtable_.get(index);
 }
 
 // TODO: HeaderTable::find()
@@ -303,7 +425,7 @@ RBuf& RBuf::operator+=(size_t len) {
     return *this;
 }
 
-Header HeaderDecoder::decode(RBuf& buf) {
+InternalHeader HeaderDecoder::decode(RBuf& buf) {
     if (buf.empty())
         throw std::runtime_error("empty buffer");
 
@@ -328,7 +450,7 @@ Header HeaderDecoder::decode(RBuf& buf) {
     return decode_literal_without_indexing(buf);
 }
 
-Header HeaderDecoder::decode_indexed(RBuf& buf) {
+InternalHeader HeaderDecoder::decode_indexed(RBuf& buf) {
     uintmax_t idx = 0;
     ssize_t len = decode_number(buf.data(), buf.size(), 7, &idx);
     if (len < 1)
@@ -339,54 +461,43 @@ Header HeaderDecoder::decode_indexed(RBuf& buf) {
     return table_.get(idx);
 }
 
-Header HeaderDecoder::decode_literal_incremental(RBuf& buf) {
-    uintmax_t idx = 0;
-    ssize_t len = decode_number(buf.data(), buf.size(), 6, &idx);
-
-    if (len < 1)
-        throw std::runtime_error("Failed to decode literal incremental header");
-
-    buf.advance(len);
-
-    if (idx)
-        return decode_literal_indexed(idx);
-
-    // These must be separate calls to ensure that the name is sequenced before
-    // the value, since the buffer is advanced by each decode call.
-    string name = decode_string_from_rbuf(buf);
-    string value = decode_string_from_rbuf(buf);
-
-    return Header(std::move(name), std::move(value));
-}
-
-static string decode_raw_string_from_rbuf(RBuf& buf) {
+static pair<string, string>
+decode_raw_string_from_rbuf(RBuf& buf) {
     uintmax_t slen = 0;
     ssize_t bufsz = decode_number(buf.data(), buf.size(), 7, &slen);
     if (bufsz < 1)
         throw std::runtime_error("String length decode failure");
+
+    string encoded(reinterpret_cast<const char*>(buf.data()), bufsz);
 
     buf.advance(bufsz);
 
     if (slen > buf.size())
         throw std::runtime_error("String prefix longer than buffer");
 
+    encoded.append(reinterpret_cast<const char *>(buf.data()), slen);
+
     string s(reinterpret_cast<const char*>(buf.data()), slen);
 
     buf.advance(slen);
 
-    return s;
+    return std::make_pair(s, encoded);
 }
 
-static string decode_huff_string_from_rbuf(RBuf& buf) {
+static pair<string, string>
+decode_huff_string_from_rbuf(RBuf& buf) {
     uintmax_t coded_len = 0;
     ssize_t bufsz = decode_number(buf.data(), buf.size(), 7, &coded_len);
     if (bufsz < 1)
         throw std::runtime_error("Huffman-coded string length decode failure");
 
+    string encoded(reinterpret_cast<const char *>(buf.data()), bufsz);
     buf.advance(bufsz);
 
     if (coded_len > buf.size())
         throw std::runtime_error("Huffman-coded string length longer than buffer");
+
+    encoded.append(reinterpret_cast<const char *>(buf.data()), coded_len);
 
     ssize_t decoded_len = coded_len * 8 / 5 + 1;
 
@@ -409,14 +520,51 @@ static string decode_huff_string_from_rbuf(RBuf& buf) {
 
     s.resize(decoded_len);
 
-    return s;
+    return make_pair(s, encoded);
 }
 
-string decode_string_from_rbuf(RBuf& buf) {
+static pair<string, string>
+decode_string_from_rbuf(RBuf& buf) {
     if (buf.empty())
         throw std::runtime_error("End of buffer decoding string");
 
     return (*buf & 0x80)
         ? decode_huff_string_from_rbuf(buf)
         : decode_raw_string_from_rbuf(buf);
+}
+
+// A header with an indexed name and literal value.
+InternalHeader HeaderDecoder::decode_literal_indexed(unsigned index, RBuf& buf) {
+    InternalHeader h = table_.get(index);
+    pair<string, string> value = decode_string_from_rbuf(buf);
+    h.value(value.first, value.second);
+    table_.insert(h);
+    return h;
+}
+
+InternalHeader HeaderDecoder::decode_literal_incremental(RBuf& buf) {
+    uintmax_t idx = 0;
+    ssize_t len = decode_number(buf.data(), buf.size(), 6, &idx);
+
+    if (len < 1)
+        throw std::runtime_error("Failed to decode literal incremental header");
+
+    buf.advance(len);
+
+    if (idx) {
+        InternalHeader h(decode_literal_indexed(idx, buf));
+        // Header was already inserted into dtable
+        return h;
+    }
+
+    // These must be separate calls to ensure that the name is sequenced before
+    // the value, since the buffer is advanced by each decode call.
+    pair<string, string> name = decode_string_from_rbuf(buf);
+    pair<string, string> value = decode_string_from_rbuf(buf);
+
+    InternalHeader h(
+            std::move(name.first), std::move(value.first),
+            std::move(name.second), std::move(value.second));
+    table_.insert(h);
+    return h;
 }

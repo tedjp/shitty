@@ -62,8 +62,6 @@ public:
 
 class StaticTable {
 public:
-    StaticTable();
-
     Header get(unsigned index) const;
     std::pair<unsigned, bool>
         find(const Header& h) const;
@@ -71,7 +69,7 @@ public:
 
 class HeaderTable {
 private:
-    StaticTable stable_;
+    static const StaticTable stable_;
     DynamicTable dtable_;
 
 public:

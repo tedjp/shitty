@@ -1825,17 +1825,16 @@ static ssize_t string_decode_common(
         // Allocate.
         //
         // Decoded string should be at most 8÷5+1 the length of the encoded
-        // buffer, otherwise the sender would have used raw encoding, but it
-        // could be as much as 30÷8+1 as long if the peer elected to use
-        // Huffman coding and encoded only the longest symbols.
+        // buffer.
         if (huff) {
-            // Don't care about integer overflow; the buffer will just be
-            // too short and the decode will fail. But it's an unrealistically
-            // large input anyway.
-            *destlenp = number * 30 / 8 + 1;
+            // Don't care about integer overflow; the buffer will just be too
+            // short and the decode will fail. If it overflows it's an
+            // unrealistically large input anyway.
+            *destlenp = number * 8 / 5 + 1;
         } else {
             *destlenp = number;
         }
+
         *destp = malloc(*destlenp);
 
         if (*destp == NULL) {

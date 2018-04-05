@@ -57,7 +57,7 @@ public:
 // start number (0 index) changes.
 class DynamicTable: public ITable {
 private:
-    const unsigned start_ = 62; // RFC 7541
+    static const unsigned start_ = 62; // RFC 7541
     unsigned size_octets_ = 4096; // RFC 7540
     std::vector<InternalHeader> table_;
 
@@ -122,7 +122,6 @@ private:
     std::vector<Header> parseHeaderFrame(RBuf& buf);
 
 private:
-    // XXX: Maybe make this private and make a separate public as below.
     Header decode(RBuf& buf);
 
     // § 6.1

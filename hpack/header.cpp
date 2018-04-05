@@ -150,30 +150,7 @@ enum class StaticHeader: uint_fast8_t {
     WWW_AUTHENTICATE,
 };
 
-
-Header::Header(const string& n, const string& v):
-    name_(n),
-    value_(v)
-{}
-
-Header::Header(string&& n, string&& v):
-    name_(std::move(n)),
-    value_(std::move(v))
-{}
-
-InternalHeader::InternalHeader(
-        const std::string& name,
-        const std::string& value,
-        bool never_indexed):
-    InternalHeader(
-            name,
-            value,
-            string(),
-            string(),
-            never_indexed)
-{}
-
-InternalHeader::InternalHeader(
+Header::Header(
         const std::string& name,
         const std::string& value,
         const std::string& name_encoded,
@@ -186,7 +163,7 @@ InternalHeader::InternalHeader(
     never_indexed_(never_indexed)
 {}
 
-InternalHeader::InternalHeader(
+Header::Header(
         std::string&& name,
         std::string&& value,
         std::string&& name_encoded,
@@ -199,32 +176,19 @@ InternalHeader::InternalHeader(
     never_indexed_(never_indexed)
 {}
 
-InternalHeader::InternalHeader(const Header& h):
-    name_(h.name()),
-    value_(h.value()),
-    name_encoded_(),
-    value_encoded_(),
-    never_indexed_(false)
-{}
-
-Header
-InternalHeader::header() const {
-    return Header(name_, value_);
-}
-
 unsigned
-InternalHeader::hpack_size() const {
+Header::hpack_size() const {
     return 32 + name_.size() + value_.size();
 }
 
 void
-InternalHeader::value(const std::string& v, const std::string& encoded_value) {
+Header::value(const std::string& v, const std::string& encoded_value) {
     value_ = v;
     value_encoded_ = encoded_value;
 }
 
 void
-InternalHeader::value(std::string&& v, std::string&& encoded_value) {
+Header::value(std::string&& v, std::string&& encoded_value) {
     value_ = std::move(v);
     value_encoded_ = std::move(encoded_value);
 }
@@ -288,7 +252,7 @@ static string hpack_encode_string(const string& s) {
 }
 
 const string&
-InternalHeader::name_encoded() const {
+Header::name_encoded() const {
     if (!name_encoded_.empty())
         return name_encoded_;
 
@@ -297,7 +261,7 @@ InternalHeader::name_encoded() const {
 }
 
 const string&
-InternalHeader::value_encoded() const {
+Header::value_encoded() const {
     if (!value_encoded_.empty())
         return value_encoded_;
 
@@ -309,7 +273,7 @@ DynamicTable::DynamicTable() {
     table_.reserve(64);
 }
 
-InternalHeader
+Header
 DynamicTable::get(unsigned index) const {
     if (index < start_)
         throw std::out_of_range("requested static table index from dynamic table");
@@ -330,21 +294,21 @@ DynamicTable::get(unsigned index) const {
 unsigned
 DynamicTable::hpack_size() const {
     unsigned s = 0;
-    for (const InternalHeader& header: table_) {
+    for (const Header& header: table_) {
         s += header.hpack_size();
     }
     return s;
 }
 
 void
-DynamicTable::insert(const InternalHeader& header) {
-    InternalHeader h(header);
+DynamicTable::insert(const Header& header) {
+    Header h(header);
     return insert(std::move(h));
 }
 
 // XXX: This is probably only used via the const& version
 void
-DynamicTable::insert(InternalHeader&& header) {
+DynamicTable::insert(Header&& header) {
     unsigned newh_size = header.hpack_size();
 
     if (newh_size > size_octets_) {
@@ -396,10 +360,10 @@ StaticTable::get(unsigned index) const {
 
 // TODO StaticTable::find()
 
-InternalHeader
+Header
 HeaderTable::get(unsigned index) const {
     // StaticTable validates index == 0
-    return index < 62 ? InternalHeader(stable_.get(index)) : dtable_.get(index);
+    return index < 62 ? stable_.get(index) : dtable_.get(index);
 }
 
 // TODO: HeaderTable::find()
@@ -425,7 +389,7 @@ RBuf& RBuf::operator+=(size_t len) {
     return *this;
 }
 
-InternalHeader HeaderDecoder::decode(RBuf& buf) {
+Header HeaderDecoder::decode(RBuf& buf) {
     if (buf.empty())
         throw std::runtime_error("empty buffer");
 
@@ -450,7 +414,7 @@ InternalHeader HeaderDecoder::decode(RBuf& buf) {
     return decode_literal_without_indexing(buf);
 }
 
-InternalHeader HeaderDecoder::decode_indexed(RBuf& buf) {
+Header HeaderDecoder::decode_indexed(RBuf& buf) {
     uintmax_t idx = 0;
     ssize_t len = decode_number(buf.data(), buf.size(), 7, &idx);
     if (len < 1)
@@ -534,15 +498,14 @@ decode_string_from_rbuf(RBuf& buf) {
 }
 
 // A header with an indexed name and literal value.
-InternalHeader HeaderDecoder::decode_literal_indexed(unsigned index, RBuf& buf) {
-    InternalHeader h = table_.get(index);
+Header HeaderDecoder::decode_literal_indexed(unsigned index, RBuf& buf) {
+    Header h = table_.get(index);
     pair<string, string> value = decode_string_from_rbuf(buf);
     h.value(value.first, value.second);
-    table_.insert(h);
     return h;
 }
 
-InternalHeader
+Header
 HeaderDecoder::decode_literal(RBuf& buf, uint_fast8_t length_bits) {
     uintmax_t idx = 0;
     ssize_t len = decode_number(buf.data(), buf.size(), length_bits, &idx);
@@ -552,26 +515,21 @@ HeaderDecoder::decode_literal(RBuf& buf, uint_fast8_t length_bits) {
 
     buf.advance(len);
 
-    if (idx) {
-        InternalHeader h(decode_literal_indexed(idx, buf));
-        // Header was already inserted into dtable
-        return h;
-    }
+    if (idx)
+        return decode_literal_indexed(idx, buf);
 
     // These must be separate calls to ensure that the name is sequenced before
     // the value, since the buffer is advanced by each decode call.
     pair<string, string> name = decode_string_from_rbuf(buf);
     pair<string, string> value = decode_string_from_rbuf(buf);
 
-    InternalHeader h(
+    return Header(
             std::move(name.first), std::move(value.first),
             std::move(name.second), std::move(value.second));
-
-    return h;
 }
 
-InternalHeader HeaderDecoder::decode_literal_incremental(RBuf& buf) {
-    InternalHeader h(decode_literal(buf, 6));
+Header HeaderDecoder::decode_literal_incremental(RBuf& buf) {
+    Header h(decode_literal(buf, 6));
     table_.insert(h);
     return h;
 }
@@ -591,14 +549,14 @@ HeaderDecoder::dynamic_table_resize(RBuf& buf) {
     table_.resize(new_size);
 }
 
-InternalHeader
+Header
 HeaderDecoder::decode_literal_without_indexing(RBuf& buf) {
     return decode_literal(buf, 4);
 }
 
-InternalHeader
+Header
 HeaderDecoder::decode_literal_never_indexed(RBuf& buf) {
-    InternalHeader h(decode_literal(buf, 4));
+    Header h(decode_literal(buf, 4));
     h.never_indexed(true);
     return h;
 }

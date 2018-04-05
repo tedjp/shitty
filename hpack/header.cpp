@@ -389,31 +389,6 @@ RBuf& RBuf::operator+=(size_t len) {
     return *this;
 }
 
-Header HeaderDecoder::decode(RBuf& buf) {
-    if (buf.empty())
-        throw std::runtime_error("empty buffer");
-
-    // The string will be at most 8÷5 the length of the encoded
-    // representation (of course add 1 due to integer rounding).
-    // So just decode the length, allocate and decode.
-    if (*buf.data() & 0x80)
-        return decode_indexed(buf);
-
-    if (*buf.data() & 0x40)
-        return decode_literal_incremental(buf);
-
-    // dynamic_table_resize must be detected by the caller before calling this
-    // function. (if ((byte[0] & 0x20 == 0x20)).)
-    // XXX: Make sure this is the case ^.
-    if ((*buf.data() & 0x20) == 0x20)
-        throw std::logic_error("HeaderDecoder::decode() got a dynamic table resize call but isn't equipped to handle it");
-
-    if (*buf.data() & 0x10)
-        return decode_literal_never_indexed(buf);
-
-    return decode_literal_without_indexing(buf);
-}
-
 Header HeaderDecoder::decode_indexed(RBuf& buf) {
     uintmax_t idx = 0;
     ssize_t len = decode_number(buf.data(), buf.size(), 7, &idx);

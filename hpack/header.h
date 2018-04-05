@@ -108,11 +108,6 @@ private:
     std::vector<Header> parseHeaders(RBuf& buf);
 
 private:
-    // These need to return an Header in case the header was a
-    // never-indexed header and you're writing a proxy that's going to forward
-    // it.
-    Header decode(RBuf& buf);
-
     // § 6.1
     Header decode_indexed(RBuf& buf);
     // § 6.2.1

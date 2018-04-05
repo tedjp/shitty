@@ -310,12 +310,6 @@ Header HeaderDecoder::decode(RBuf& buf) {
     // The string will be at most 8÷5 the length of the encoded
     // representation (of course add 1 due to integer rounding).
     // So just decode the length, allocate and decode.
-#if 0 // ref
-    ssize_t decode_number(const uint8_t* buf, size_t len, uintfast8t_ bits, uintmaxt* number);
-
-    //ssize_t string_decode(const uint8_t *buf, size_t buflen, uint8_t *dest, size_t destlen);
-    ssize_t huffman_decode(buf, buflen, first_octet_bits, *dest, destlen);
-#endif
     if (*buf.data() & 0x80)
         return decode_indexed(buf);
 

@@ -560,3 +560,23 @@ HeaderDecoder::decode_literal_never_indexed(RBuf& buf) {
     h.never_indexed(true);
     return h;
 }
+
+vector<Header>
+HeaderDecoder::parseHeaders(RBuf& buf) {
+    vector<Header> headers;
+
+    while (!buf.empty()) {
+        if (*buf & 0x80)
+            headers.emplace_back(decode_indexed(buf));
+        else if (*buf & 0x40)
+            headers.emplace_back(decode_literal_incremental(buf));
+        else if (*buf & 0x20)
+            dynamic_table_resize(buf);
+        else if (*buf & 0x10)
+            headers.emplace_back(decode_literal_never_indexed(buf));
+        else
+            headers.emplace_back(decode_literal_without_indexing(buf));
+    }
+
+    return headers;
+}

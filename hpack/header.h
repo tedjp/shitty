@@ -105,8 +105,7 @@ class HeaderDecoder {
 private:
     HeaderTable table_;
 
-    // TODO: Implement
-    std::vector<Header> parseHeaderFrame(RBuf& buf);
+    std::vector<Header> parseHeaders(RBuf& buf);
 
 private:
     // These need to return an Header in case the header was a

@@ -318,8 +318,9 @@ Header HeaderDecoder::decode(RBuf& buf) {
 
     // dynamic_table_resize must be detected by the caller before calling this
     // function. (if ((byte[0] & 0x20 == 0x20)).)
-    // FIXME: Make sure this is the case ^.
-    assert((*buf.data() & 0x20) == 0);
+    // XXX: Make sure this is the case ^.
+    if ((*buf.data() & 0x20) == 0x20)
+        throw std::logic_error("HeaderDecoder::decode() got a dynamic table resize call but isn't equipped to handle it");
 
     if (*buf.data() & 0x10)
         return decode_literal_never_indexed(buf);

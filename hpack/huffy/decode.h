@@ -3,6 +3,10 @@
 #include <sys/types.h> // ssize_t
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ssize_t huffman_decode(const uint8_t *buf, size_t buflen, uint8_t first_octet_bits, uint8_t *dest, size_t destlen);
 
 // Decode a string that is either raw or Huffman-coded.
@@ -14,3 +18,7 @@ ssize_t string_decode(const uint8_t *buf, size_t buflen, uint8_t *dest, size_t d
 // Same as string_decode but the output buffer is allocated using malloc
 // (and does not need to be known/bounded in advance).
 ssize_t string_decode_alloc(const uint8_t *buf, size_t buflen, uint8_t **destp, size_t *destlenp);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <string.h>
+
 #include "bitbuf.h"
 #include "decode.h"
 #include "../number.h"
@@ -1800,7 +1803,7 @@ static ssize_t string_decode_common(
     const bool huff = (buf[0] & 0x80);
 
     uintmax_t number = 0;
-    ssize_t len = decode_number(buf, len, 7, &number);
+    ssize_t len = decode_number(buf, buflen, 7, &number);
     if (len < 1) {
         return -1;
     }
@@ -1829,7 +1832,7 @@ static ssize_t string_decode_common(
             return -1; // ENOMEM
         }
     } else {
-        if (destlen < number)
+        if (*destlenp < number)
             return -1; // output buffer too short
     }
 
@@ -1837,10 +1840,10 @@ static ssize_t string_decode_common(
     size_t string_buf_len = buflen - len;
 
     if (huff)
-        return huffman_decode(string_start, string_buf_len, 8, dest, destlen);
+        return huffman_decode(string_start, string_buf_len, 8, *destp, *destlenp);
 
     // raw octets
-    memcpy(dest, string_start, number);
+    memcpy(*destp, string_start, number);
     return len + number;
 }
 

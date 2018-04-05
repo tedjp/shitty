@@ -22,10 +22,10 @@ bitbuf-test: bitbuf-test.c bitbuf.o
 decode.o: decode.c decode.h
 	gcc -Wall -g -c -o $@ $<
 
-decode-test: decode-test.c decode.o bitbuf.o
+decode-test: decode-test.c decode.o bitbuf.o ../number.o
 	gcc -Wall -g -o $@ $^
 
-random-test: random-test.c encode.o decode.o bitbuf.o ../number.c
+random-test: random-test.c encode.o decode.o bitbuf.o ../number.o
 	gcc -Wall -g -o $@ $^
 
 TESTS = bitbuf-test encode-test decode-test random-test

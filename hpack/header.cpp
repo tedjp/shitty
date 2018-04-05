@@ -542,9 +542,10 @@ InternalHeader HeaderDecoder::decode_literal_indexed(unsigned index, RBuf& buf) 
     return h;
 }
 
-InternalHeader HeaderDecoder::decode_literal_incremental(RBuf& buf) {
+InternalHeader
+HeaderDecoder::decode_literal(RBuf& buf, uint_fast8_t length_bits) {
     uintmax_t idx = 0;
-    ssize_t len = decode_number(buf.data(), buf.size(), 6, &idx);
+    ssize_t len = decode_number(buf.data(), buf.size(), length_bits, &idx);
 
     if (len < 1)
         throw std::runtime_error("Failed to decode literal incremental header");
@@ -565,6 +566,12 @@ InternalHeader HeaderDecoder::decode_literal_incremental(RBuf& buf) {
     InternalHeader h(
             std::move(name.first), std::move(value.first),
             std::move(name.second), std::move(value.second));
+
+    return h;
+}
+
+InternalHeader HeaderDecoder::decode_literal_incremental(RBuf& buf) {
+    InternalHeader h(decode_literal(buf, 6));
     table_.insert(h);
     return h;
 }
@@ -582,4 +589,16 @@ HeaderDecoder::dynamic_table_resize(RBuf& buf) {
     buf.advance(len);
 
     table_.resize(new_size);
+}
+
+InternalHeader
+HeaderDecoder::decode_literal_without_indexing(RBuf& buf) {
+    return decode_literal(buf, 4);
+}
+
+InternalHeader
+HeaderDecoder::decode_literal_never_indexed(RBuf& buf) {
+    InternalHeader h(decode_literal(buf, 4));
+    h.never_indexed(true);
+    return h;
 }

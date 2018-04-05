@@ -53,6 +53,8 @@ public:
     unsigned hpack_size() const;
     const std::string& name_encoded() const;
     const std::string& value_encoded() const;
+    bool never_indexed() const { return never_indexed_; }
+    void never_indexed(bool v) { never_indexed_ = v; }
 };
 
 // For initial implementation just use vector::insert() at the beginning,
@@ -135,7 +137,8 @@ private:
     InternalHeader decode_indexed(RBuf& buf);
     // § 6.2.1
     InternalHeader decode_literal_incremental(RBuf& buf);
-    // Helper
+    // Helpers
+    InternalHeader decode_literal(RBuf& buf, uint_fast8_t length_bits);
     InternalHeader decode_literal_indexed(unsigned index, RBuf& buf);
     // § 6.2.2
     InternalHeader decode_literal_without_indexing(RBuf& buf);

@@ -16,6 +16,7 @@ public:
     void value(std::string&& v) { value_ = std::move(v); }
 };
 
+// XXX: Rename this to... FullHeader? EncodedHeader?
 class InternalHeader {
 private:
     std::string name_, value_;
@@ -95,8 +96,10 @@ public:
     std::pair<unsigned, bool>
         find(const Header& h) const;
     void insert(const InternalHeader& h) { dtable_.insert(h); }
+    void resize(unsigned new_hpack_size) { dtable_.resize(new_hpack_size); }
 };
 
+// A *non-owning* interface to a contiguous buffer.
 class RBuf {
 private:
     const uint8_t *data_, *end_;

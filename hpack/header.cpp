@@ -568,3 +568,18 @@ InternalHeader HeaderDecoder::decode_literal_incremental(RBuf& buf) {
     table_.insert(h);
     return h;
 }
+
+void
+HeaderDecoder::dynamic_table_resize(RBuf& buf) {
+    if (buf.empty() || (*buf & 0x02) != 0x02)
+        throw std::logic_error("Not a dynamic table size update message");
+
+    uintmax_t new_size = 0;
+    ssize_t len = decode_number(buf.data(), buf.size(), 5, &new_size);
+    if (len < 1)
+        throw std::runtime_error("Error decoding buffer resize message");
+
+    buf.advance(len);
+
+    table_.resize(new_size);
+}

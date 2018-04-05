@@ -291,6 +291,18 @@ HeaderTable::get(unsigned index) const {
 // so maybe move it out into a SenderTable class ensuring that it doesn't
 // add cruft and useless work to the decoder side.
 
+void RBuf::advance(size_t len) {
+    if (__builtin_expect(data_ + len > end_, 0))
+        throw std::runtime_error("Cannot advance beyond end of buffer");
+
+    data_ += len;
+}
+
+RBuf& RBuf::operator+=(size_t len) {
+    advance(len);
+    return *this;
+}
+
 Header HeaderDecoder::decode(RBuf& buf) {
     if (buf.empty())
         throw std::runtime_error("empty buffer");

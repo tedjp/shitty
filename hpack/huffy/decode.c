@@ -1685,15 +1685,6 @@ ssize_t huffman_decode(
     uint8_t *const begin = dest;
     uint8_t *const end = dest + destlen;
 
-    // TODO: It's probably faster to have an explicit end-of-input check on
-    // the bb_reader than to have it return ffs when the end of the input is
-    // reached. That way the branches between each table can be annotated to
-    // prefer the short branch (terminating in that table).
-    // As it stands, end-of-input requires traversing the deepest branch to its
-    // tip, which is otherwise a rare path.
-    // Branch predictor hints are kept in comments on some branches for when
-    // the end-of-string check is added separately.
-
     while (dest != end) {
         if (bb_eos(&reader))
             return dest - begin;
@@ -1723,7 +1714,7 @@ ssize_t huffman_decode(
         octet = bb_peek(&reader);
         sym = shortbits1_ff[octet];
 
-        if (sym.octet != SENTINEL) { // LIKELY
+        if (LIKELY(sym.octet != SENTINEL)) {
             *dest = sym.octet;
             ++dest;
             // TODO: Store post-modulo bit length in lookup table
@@ -1752,7 +1743,7 @@ ssize_t huffman_decode(
         octet = bb_peek(&reader);
         sym = shortbits2_ffff[octet];
 
-        if (sym.octet != SENTINEL) { // LIKELY
+        if (LIKELY(sym.octet != SENTINEL)) {
             *dest = sym.octet;
             ++dest;
             // TODO: Store post-subtraction bit length in lookup table
@@ -1763,7 +1754,7 @@ ssize_t huffman_decode(
 
         bb_next(&reader, 8);
 
-        if (octet != 0xfe && octet != 0xff) { // LIKELY
+        if (LIKELY(octet != 0xfe && octet != 0xff)) {
             sym = shortbits23[(uint8_t)(octet << 4) | bb_peek(&reader) >> 4];
             *dest = sym.octet;
             ++dest;
@@ -1779,11 +1770,7 @@ ssize_t huffman_decode(
         octet = ((octet << 6) & 64) | (bb_peek(&reader) >> 2);
         sym = shortbits3[octet];
 
-        // This far down the tree we're much more likely to have reached
-        // end-of-string than to be finding a rare Huffman code.
-        // However, once there's a separate end-of-string check, this becomes
-        // LIKELY because nobody would normally encode the entire EOS symbol.
-        if (sym.octet != SENTINEL) { // LIKELY
+        if (LIKELY(sym.octet != SENTINEL)) {
             *dest = sym.octet;
             ++dest;
             // TODO: Store post-subtraction bit length in lookup table

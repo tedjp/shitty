@@ -16,6 +16,13 @@ Usage
 
     make run
 
+HPACK — HTTP/2 header compression
+=================================
+
+Includes a functional implementation of HPACK, HTTP/2's header
+compression/decompression algorithm. It's not used by the shitty daemon yet.
+See the `hpack` & `hpack/huffy` directories.
+
 See also
 ========
 

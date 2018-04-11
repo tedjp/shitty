@@ -140,7 +140,8 @@ static void handle(int client) {
     else
         reqbuf[sizeof(reqbuf)-1] = '\0'; // yep actually truncating the request. This is garbage.
 
-    if (strcasestr(reqbuf, "\r\nUpgrade: h2c\r\n") == NULL) {
+    if (strcasestr(reqbuf, "\r\nUpgrade: h2c\r\n") == NULL &&
+            strcasestr(reqbuf, "\r\nUpgrade:h2c\r\n") == NULL) {
         // Client didn't attempt to upgrade. Drop it for being old and lame.
         static char body[] = "Upgrade required.\n"; // IF CHANGED UPDATE Content-Length
         static char headers[] = "HTTP/1.1 426 Upgrade Required\r\n"

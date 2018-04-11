@@ -135,7 +135,7 @@ static void handle(int client) {
     ssize_t len = read(client, reqbuf, sizeof(reqbuf));
     // Obviously we should be looping until \r\n\r\n is found or some timeout
     fprintf(stderr, "DBG: Read %zd octets\n", len);
-    if (len < sizeof(reqbuf))
+    if (len < (ssize_t)sizeof(reqbuf))
         reqbuf[len] = '\0';
     else
         reqbuf[sizeof(reqbuf)-1] = '\0'; // yep actually truncating the request. This is garbage.

@@ -27,4 +27,4 @@ See also
 ========
 
 If you like useless daemons, you might also be interested in
-[wtfd](http://tedp.id.au/junkcode/wtfd.c).
+[wtfd](https://github.com/tedjp/wtfd).

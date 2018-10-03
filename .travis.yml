@@ -1,0 +1,3 @@
+language: cpp
+sudo: false
+script: set -e; for dir in hpack/huffy hpack .; do (cd $dir && make -j && make check); done

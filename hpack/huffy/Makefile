@@ -1,5 +1,7 @@
 .PHONY: all check clean
 
+CC = gcc -std=gnu99 -Wall -g
+
 all: bitbuf.o encode.o decode.o
 
 encode-table.c: huffcodes.txt make-etable.sh
@@ -8,25 +10,25 @@ encode-table.c: huffcodes.txt make-etable.sh
 encode.c: encode-table.c
 
 encode.o: encode.c encode.h
-	gcc -Wall -g -c -o $@ $<
+	$(CC) -c -o $@ $<
 
 encode-test: encode-test.c encode.o ../number.c
-	gcc -Wall -g -o $@ $^
+	$(CC) -o $@ $^
 
 bitbuf.o: bitbuf.c bitbuf.h
-	gcc -Wall -g -c -o $@ $<
+	$(CC) -c -o $@ $<
 
 bitbuf-test: bitbuf-test.c bitbuf.o
-	gcc -Wall -g -o $@ $^
+	$(CC) -o $@ $^
 
 decode.o: decode.c decode.h
-	gcc -Wall -g -c -o $@ $<
+	$(CC) -c -o $@ $<
 
 decode-test: decode-test.c decode.o bitbuf.o ../number.o
-	gcc -Wall -g -o $@ $^
+	$(CC) -o $@ $^
 
 random-test: random-test.c encode.o decode.o bitbuf.o ../number.o
-	gcc -Wall -g -o $@ $^
+	$(CC) -o $@ $^
 
 TESTS = bitbuf-test encode-test decode-test random-test
 check: $(TESTS)

@@ -2,6 +2,7 @@ all: shitty
 run: shitty
 	./shitty
 shitty: shitty.c
-	gcc -Wall -Wextra -Werror -o shitty shitty.c
+	gcc -std=gnu99 -Wall -Wextra -Werror -o $@ $<
 clean:
 	rm -f shitty
+check:

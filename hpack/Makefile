@@ -3,13 +3,13 @@
 all: header.o number.o
 
 number.o: number.c number.h
-	gcc -Wall -c -o $@ $<
+	gcc -std=gnu99 -Wall -c -o $@ $<
 
 header.o: header.cpp header.h number.h huffy/decode.h
-	g++ -Wall -Wextra -c -o $@ $<
+	g++ -std=gnu++11 -Wall -Wextra -c -o $@ $<
 
 test: test.c number.o
-	gcc -Wall -o $@ $^
+	gcc -std=gnu99 -Wall -o $@ $^
 
 check: test
 	./$<

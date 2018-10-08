@@ -9,6 +9,8 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#include "error.h"
+
 static const int TCP_BACKLOG = 1;
 
 enum FrameType {
@@ -16,10 +18,7 @@ enum FrameType {
     GOAWAY = 0x07
 };
 
-enum ErrorCode {
-    NO_ERROR = 0x00,
-    PROTOCOL_ERROR = 0x01
-};
+using namespace shitty::http2;
 
 struct __attribute__((packed)) setting {
     uint16_t identifier;

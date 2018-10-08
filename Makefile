@@ -1,8 +1,15 @@
 all: shitty
+
 run: shitty
 	./shitty
-shitty: shitty.c
-	gcc -std=gnu99 -Wall -Wextra -Werror -o $@ $<
+
+%.o: %.cpp %.h
+	g++ -std=gnu++11 -Wall -Wextra -Werror -c -o $@ $<
+
+shitty: shitty.cpp error.h settings.h settings.o
+	g++ -std=gnu++11 -Wall -Wextra -Werror -o $@ $<
+
 clean:
 	rm -f shitty
+
 check:

@@ -1,6 +1,13 @@
 #pragma once
 
-namespace shitty::http2 {
+#include <stdexcept>
+
+namespace shitty {
+
+std::runtime_error
+error_errno(const char *prefix);
+
+namespace http2 {
 
 enum ErrorCode {
     NO_ERROR = 0x0,
@@ -19,4 +26,5 @@ enum ErrorCode {
     HTTP_1_1_REQUIRED = 0xd,
 };
 
-}
+} // namespace http2
+} // namespace shitty

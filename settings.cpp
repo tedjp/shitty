@@ -50,4 +50,7 @@ void Settings::set(Setting setting, uint32_t value) {
     values_[setting - 1] = value;
 }
 
+constexpr std::array<uint32_t, 6>
+shitty::http2::Settings::initial_values;
+
 } // namespace

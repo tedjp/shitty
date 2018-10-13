@@ -21,6 +21,9 @@ public:
     static ErrorCode validate(Setting setting, uint32_t value);
 
     void set(Setting setting, uint32_t value);
+    uint32_t get(Setting setting) const {
+        return values_[setting];
+    }
 
 private:
     static constexpr std::array<uint32_t, 6> initial_values = {

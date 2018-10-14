@@ -1,10 +1,8 @@
 #include "server.h"
 
-using namespace shitty;
-using namespace shitty::http2;
-
 int main(void) {
-    auto s = Server::Create();
+    auto s = shitty::http2::Server::Create();
+    s.run();
 
     return 0;
 }

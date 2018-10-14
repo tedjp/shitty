@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstring>
 #include <unistd.h>
 #include <utility>
 
@@ -30,9 +31,10 @@ public:
     }
 
     ~SafeFD() {
-        if (fd_ != -1) {
-            close(fd_);
-        }
+        try {
+            close();
+        } catch (...)
+        {}
     }
 
     int release() {
@@ -42,9 +44,7 @@ public:
     }
 
     void reset() {
-        if (fd_ != -1)
-            close(fd_);
-        fd_ = -1;
+        close();
     }
 
     void swap(SafeFD& other) {
@@ -61,6 +61,16 @@ public:
 
     int operator*() const {
         return fd_;
+    }
+
+    void close() {
+        if (fd_ == -1)
+            return;
+
+        if (::close(fd_) == -1)
+            throw std::runtime_error(std::string("close: ") + strerror(errno));
+
+        fd_ = -1;
     }
 
 private:

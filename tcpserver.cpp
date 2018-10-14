@@ -1,5 +1,6 @@
 #include <memory>
 #include <netdb.h>
+#include <poll.h>
 
 #include "error.h"
 #include "socket.h"
@@ -70,7 +71,18 @@ makeTCPServer(
 
 void
 TCPServer::run() {
-    // TODO
+    struct pollfd pfd = {
+        .fd = socket_.getRawFD(),
+        .events = POLLIN,
+        .revents = 0,
+    };
+
+    for (;;) {
+        int e = poll(&pfd, 1, -1);
+        if (e == -1)
+            throw error_errno("poll");
+        handler_.onAccept(socket_.accept());
+    }
 }
 
 } // namespace shitty

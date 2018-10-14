@@ -3,15 +3,21 @@ all: shitty
 run: shitty
 	./shitty
 
+CXX = g++ -std=gnu++17 -Wall -Wextra -Werror -fmax-errors=10
+COMPILE_OBJ = $(CXX) -c
+
 %.o: %.cpp %.h
-	g++ -std=gnu++17 -Wall -Wextra -Werror -fmax-errors=10 -c -o $@ $<
+	$(COMPILE_OBJ) -o $@ $<
 
 OBJS = settings.o socket.o server.o error.o tcpserver.o
 
 shitty: shitty.cpp $(OBJS)
-	g++ -std=gnu++17 -Wall -Wextra -Werror -fmax-errors=10 -o $@ $^
+	$(CXX) -o $@ $^
+
+wtfd2: wtfd2.cpp $(OBJS)
+	$(CXX) -o $@ $^
 
 clean:
-	rm -f shitty
+	rm -f shitty wtfd2 *.o
 
 check:

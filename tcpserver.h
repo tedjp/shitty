@@ -2,38 +2,41 @@
 
 #include <set>
 #include <string>
+#include <unordered_map>
 
 #include "socket.h"
 
 namespace shitty {
 
-class Handler {
-public:
-    virtual int getFD() = 0; // for epoll
-
-};
-
-template <typename HandlerType>
 class TCPServer {
 public:
+    class Handler {
+    public:
+        virtual void onAccept(Socket&& client) {
+            client.close();
+        }
+    };
+
     static const std::string DEFAULT_HOST;
     static const std::string DEFAULT_SERVICE;
 
-    TCPServer(Socket&& socket);
-    //TCPServer(const std::string& host = DEFAULT_HOST, const std::string& service = DEFAULT_SERVICE);
-
-    static TCPServer<HandlerType> Create(const std::string& host = DEFAULT_HOST, const std::string& port = DEFAULT_SERVICE);
+    TCPServer(Handler& handler, Socket&& socket);
 
     // Self-contained event loop
     void run();
 
 protected:
     Socket socket_;
-
-private:
-    std::unordered_map<int, HandlerType> clients_;
+    Handler& handler_;
 };
 
-} // namespace shitty
+TCPServer
+makeTCPServer(TCPServer::Handler& handler, uint16_t port);
 
-#include "tcpserver-inl.h"
+TCPServer
+makeTCPServer(
+        TCPServer::Handler& handler,
+        const std::string& host = TCPServer::DEFAULT_HOST,
+        const std::string& service = TCPServer::DEFAULT_SERVICE);
+
+} // namespace shitty

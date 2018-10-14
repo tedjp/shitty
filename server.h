@@ -6,6 +6,6 @@
 #include "tcpserver.h"
 
 namespace shitty::http2 {
-class Server: public TCPServer<Connection> {
+class Server {
 };
 } // namespace shitty::http2

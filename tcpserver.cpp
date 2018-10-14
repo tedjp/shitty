@@ -3,22 +3,29 @@
 
 #include "error.h"
 #include "socket.h"
+#include "tcpserver.h"
 
 namespace shitty {
 
-template <typename HandlerType>
-const std::string TCPServer<HandlerType>::DEFAULT_HOST("::");
-template <typename HandlerType>
-const std::string TCPServer<HandlerType>::DEFAULT_SERVICE("http");
+const std::string TCPServer::DEFAULT_HOST("::");
+const std::string TCPServer::DEFAULT_SERVICE("http");
 
-template <typename HandlerType>
-TCPServer<HandlerType>::TCPServer(Socket&& socket):
-    socket_(std::move(socket))
+TCPServer::TCPServer(Handler& handler, Socket&& socket):
+    socket_(std::move(socket)),
+    handler_(handler)
 {}
 
-template <typename HandlerType>
-TCPServer<HandlerType>
-TCPServer<HandlerType>::Create(const std::string& host, const std::string& port) {
+TCPServer
+makeTCPServer(TCPServer::Handler& handler, uint16_t port) {
+    return makeTCPServer(handler, TCPServer::DEFAULT_HOST, std::to_string(port));
+}
+
+TCPServer
+makeTCPServer(
+        TCPServer::Handler& handler,
+        const std::string& host,
+        const std::string& port)
+{
     const struct addrinfo hints{
         .ai_flags = AI_PASSIVE | AI_V4MAPPED,
         .ai_family = AF_INET6,
@@ -58,12 +65,11 @@ TCPServer<HandlerType>::Create(const std::string& host, const std::string& port)
     socket.bind(addrs->ai_addr, addrs->ai_addrlen);
     socket.listen();
 
-    return TCPServer<HandlerType>(std::move(socket));
+    return TCPServer(handler, std::move(socket));
 }
 
-template <typename HandlerType>
 void
-TCPServer<HandlerType>::run() {
+TCPServer::run() {
     // TODO
 }
 

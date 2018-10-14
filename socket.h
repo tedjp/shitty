@@ -34,6 +34,12 @@ public:
         fd_.close();
     }
 
+    explicit operator bool() const {
+        return fd_;
+    }
+
+    void send(const void *buf, size_t len);
+
     //IOBuf read(size_t limit = SIZE_MAX);
 
 private:

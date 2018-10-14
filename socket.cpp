@@ -49,3 +49,14 @@ Socket::accept(
 
     return Socket(std::move(fd));
 }
+
+void Socket::send(const void *buf, size_t len) {
+    // FIXME if this blocks, it's bad.
+    ssize_t sent = ::send(fd_, buf, len, MSG_DONTWAIT);
+
+    if (sent < 0)
+        throw error_errno("send");
+
+    if (static_cast<size_t>(sent) < len)
+        throw std::runtime_error("short write");
+}

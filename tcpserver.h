@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -20,22 +21,22 @@ public:
     static const std::string DEFAULT_HOST;
     static const std::string DEFAULT_SERVICE;
 
-    TCPServer(Handler& handler, Socket&& socket);
+    TCPServer(std::unique_ptr<Handler>&& handler, Socket&& socket);
 
     // Self-contained event loop
     void run();
 
 protected:
     Socket socket_;
-    Handler& handler_;
+    std::unique_ptr<Handler> handler_;
 };
 
 TCPServer
-makeTCPServer(TCPServer::Handler& handler, uint16_t port);
+makeTCPServer(std::unique_ptr<TCPServer::Handler>&& handler, uint16_t port);
 
 TCPServer
 makeTCPServer(
-        TCPServer::Handler& handler,
+        std::unique_ptr<TCPServer::Handler>&& handler,
         const std::string& host = TCPServer::DEFAULT_HOST,
         const std::string& service = TCPServer::DEFAULT_SERVICE);
 

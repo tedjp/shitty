@@ -1,4 +1,4 @@
-all: shitty
+all: wtfd2 shitty
 
 run: shitty
 	./shitty

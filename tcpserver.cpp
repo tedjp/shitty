@@ -11,19 +11,21 @@ namespace shitty {
 const std::string TCPServer::DEFAULT_HOST("::");
 const std::string TCPServer::DEFAULT_SERVICE("http");
 
-TCPServer::TCPServer(Handler& handler, Socket&& socket):
+TCPServer::TCPServer(std::unique_ptr<Handler>&& handler, Socket&& socket):
     socket_(std::move(socket)),
-    handler_(handler)
+    handler_(std::move(handler))
 {}
 
 TCPServer
-makeTCPServer(TCPServer::Handler& handler, uint16_t port) {
-    return makeTCPServer(handler, TCPServer::DEFAULT_HOST, std::to_string(port));
+makeTCPServer(std::unique_ptr<TCPServer::Handler>&& handler, uint16_t port) {
+    return makeTCPServer(
+            std::move(handler),
+            TCPServer::DEFAULT_HOST, std::to_string(port));
 }
 
 TCPServer
 makeTCPServer(
-        TCPServer::Handler& handler,
+        std::unique_ptr<TCPServer::Handler>&& handler,
         const std::string& host,
         const std::string& port)
 {
@@ -66,7 +68,7 @@ makeTCPServer(
     socket.bind(addrs->ai_addr, addrs->ai_addrlen);
     socket.listen();
 
-    return TCPServer(handler, std::move(socket));
+    return TCPServer(std::move(handler), std::move(socket));
 }
 
 void
@@ -81,7 +83,7 @@ TCPServer::run() {
         int e = poll(&pfd, 1, -1);
         if (e == -1)
             throw error_errno("poll");
-        handler_.onAccept(socket_.accept());
+        handler_->onAccept(socket_.accept());
     }
 }
 

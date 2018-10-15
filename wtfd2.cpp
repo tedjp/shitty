@@ -15,7 +15,7 @@ public:
 
 int main(void) {
     WTFHandler handler;
-    auto server = shitty::makeTCPServer(handler, 23206);
+    auto server = shitty::makeTCPServer(std::make_unique<WTFHandler>(), 23206);
     server.run();
     return 0;
 }

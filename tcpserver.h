@@ -7,37 +7,33 @@
 
 #include "socket.h"
 
-namespace shitty {
+namespace shitty::tcpserver {
 
-class TCPServer {
+class Server {
 public:
-    class Handler {
-    public:
-        virtual void onAccept(Socket&& client) {
-            client.close();
-        }
-    };
-
     static const std::string DEFAULT_HOST;
     static const std::string DEFAULT_SERVICE;
 
-    TCPServer(std::unique_ptr<Handler>&& handler, Socket&& socket);
+    Server(uint16_t port);
+
+    Server(
+            const std::string& host = Server::DEFAULT_HOST,
+            const std::string& service = Server::DEFAULT_SERVICE);
 
     // Self-contained event loop
     void run();
 
+    // Or: Run your own loop with this FD & callback
+    int getFD();
+    void onEvent();
+
 protected:
+    // Override this to do something with a new connection
+    virtual void onNewConnection(Socket&& client) {
+        client.close();
+    }
+
     Socket socket_;
-    std::unique_ptr<Handler> handler_;
 };
-
-TCPServer
-makeTCPServer(std::unique_ptr<TCPServer::Handler>&& handler, uint16_t port);
-
-TCPServer
-makeTCPServer(
-        std::unique_ptr<TCPServer::Handler>&& handler,
-        const std::string& host = TCPServer::DEFAULT_HOST,
-        const std::string& service = TCPServer::DEFAULT_SERVICE);
 
 } // namespace shitty

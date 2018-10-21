@@ -1,21 +1,23 @@
 #include "tcpserver.h"
 
-class WTFHandler: public shitty::TCPServer::Handler {
+class WTFServer: public shitty::tcpserver::Server {
 public:
-    void onAccept(shitty::Socket&& socket) override {
+    WTFServer():
+        Server(23206)
+    {}
+
+    void onNewConnection(shitty::Socket&& client) override {
         const char response[] = {
             'w', 't', 'f', '\n'
         };
 
-        socket.send(response, sizeof(response));
+        client.send(response, sizeof(response));
 
-        socket.close();
+        client.close();
     }
 };
 
 int main(void) {
-    WTFHandler handler;
-    auto server = shitty::makeTCPServer(std::make_unique<WTFHandler>(), 23206);
-    server.run();
+    WTFServer().run();
     return 0;
 }

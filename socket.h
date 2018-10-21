@@ -40,10 +40,21 @@ public:
 
     void send(const void *buf, size_t len);
 
-    //IOBuf read(size_t limit = SIZE_MAX);
+    bool operator==(const Socket& rhs) const {
+        return fd_ == rhs.fd_;
+    }
 
 private:
     SafeFD fd_;
+
+    friend struct std::hash<Socket>;
 };
 
 } // namespace shitty
+
+template <>
+struct std::hash<shitty::Socket> {
+    size_t operator()(const shitty::Socket& s) const {
+        return static_cast<size_t>(s.fd_.get());
+    }
+};

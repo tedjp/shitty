@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <cstddef>
 #include <unistd.h>
 #include <utility>
 
@@ -73,8 +74,21 @@ public:
         fd_ = -1;
     }
 
+    bool operator==(const SafeFD& rhs) const {
+        return fd_ == rhs.fd_;
+    }
+
+    friend struct std::hash<SafeFD>;
+
 private:
     int fd_ = -1;
 };
 
 } // namespace shitty
+
+template <>
+struct std::hash<shitty::SafeFD> {
+    size_t operator()(const shitty::SafeFD& fd) const {
+        return static_cast<size_t>(fd.fd_);
+    }
+};

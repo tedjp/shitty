@@ -6,28 +6,17 @@
 #include "socket.h"
 #include "tcpserver.h"
 
-namespace shitty {
+namespace shitty::tcpserver {
 
-const std::string TCPServer::DEFAULT_HOST("::");
-const std::string TCPServer::DEFAULT_SERVICE("http");
+const std::string Server::DEFAULT_HOST("::");
+const std::string Server::DEFAULT_SERVICE("http");
 
-TCPServer::TCPServer(std::unique_ptr<Handler>&& handler, Socket&& socket):
-    socket_(std::move(socket)),
-    handler_(std::move(handler))
+Server::Server(uint16_t port):
+    Server(Server::DEFAULT_HOST, std::to_string(port))
 {}
 
-TCPServer
-makeTCPServer(std::unique_ptr<TCPServer::Handler>&& handler, uint16_t port) {
-    return makeTCPServer(
-            std::move(handler),
-            TCPServer::DEFAULT_HOST, std::to_string(port));
-}
-
-TCPServer
-makeTCPServer(
-        std::unique_ptr<TCPServer::Handler>&& handler,
-        const std::string& host,
-        const std::string& port)
+Server::Server(const std::string& host, const std::string& service):
+    socket_(SafeFD(-1))
 {
     const struct addrinfo hints{
         .ai_flags = AI_PASSIVE | AI_V4MAPPED,
@@ -50,7 +39,7 @@ makeTCPServer(
     struct addrinfo *addrs_raw = nullptr;
     int err = getaddrinfo(
             host.empty() ? nullptr : host.c_str(),
-            port.empty() ? nullptr : port.c_str(),
+            service.empty() ? nullptr : service.c_str(),
             &hints,
             &addrs_raw);
 
@@ -64,15 +53,13 @@ makeTCPServer(
     addrs_raw = nullptr;
 
     // FIXME: Try all addresses
-    Socket socket(addrs->ai_family, addrs->ai_socktype, addrs->ai_protocol);
-    socket.bind(addrs->ai_addr, addrs->ai_addrlen);
-    socket.listen();
-
-    return TCPServer(std::move(handler), std::move(socket));
+    socket_ = Socket(addrs->ai_family, addrs->ai_socktype, addrs->ai_protocol);
+    socket_.bind(addrs->ai_addr, addrs->ai_addrlen);
+    socket_.listen();
 }
 
 void
-TCPServer::run() {
+Server::run() {
     struct pollfd pfd = {
         .fd = socket_.getRawFD(),
         .events = POLLIN,
@@ -83,8 +70,17 @@ TCPServer::run() {
         int e = poll(&pfd, 1, -1);
         if (e == -1)
             throw error_errno("poll");
-        handler_->onAccept(socket_.accept());
+        onNewConnection(socket_.accept());
     }
+}
+
+int
+Server::getFD() {
+    return socket_.getRawFD();
+}
+
+void Server::onEvent() {
+    onNewConnection(socket_.accept());
 }
 
 } // namespace shitty

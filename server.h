@@ -1,29 +1,24 @@
-#include <functional>
+#pragma once
 
-#include "tcpserver.h"
+#include "handler.h"
 
-#include "connection.h"
+#include <vector>
 
-using namespace shitty;
+namespace shitty {
 
-namespace shitty::http2 {
-
-class ClientHandler {
-};
-
-class Server: public tcpserver::Server {
+class Server {
 public:
-    Server();
+    template <typename... Ts>
+    Server& addHandler(const std::string& path, Ts... args) {
+        //handlers_.emplace_back(path, std::forward(args)...);
+        handlers_.emplace_back(path, args...);
+        return *this;
+    }
 
-    void onNewConnection(Socket&& socket) override;
-
-    // event loop
     void run();
 
 private:
-    std::unordered_map<Socket, ClientHandler> clients_;
-
-    SafeFD epollfd_;
+    std::vector<Handler> handlers_;
 };
 
-} // namespace shitty::http2
+} // namespace shitty

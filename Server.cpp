@@ -3,8 +3,12 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "error.h"
-#include "server.h"
+#include <unordered_set>
+
+#include "Connection.h"
+#include "Error.h"
+#include "RequestRouter.h"
+#include "Server.h"
 
 namespace shitty {
 
@@ -19,10 +23,27 @@ private:
     void setup();
     void loop();
     void dispatch(struct epoll_event *event);
+    bool accept();
 
     Server *server_ = nullptr;
+
     int epfd_ = -1;
+
     int listenfd_ = -1;
+
+    struct event_receiver {
+        enum { EV_LISTENER, EV_CONNECTION } type;
+        union {
+            int listener_fd;
+            Connection *connection;
+        };
+    };
+
+    RequestRouter request_router_;
+
+    //std::unordered_set<Connection> clients_;
+    // Set element must be const.
+    std::unordered_set<std::unique_ptr<Connection>> clients_;
 };
 
 Server::Server():
@@ -49,8 +70,8 @@ Server::Impl::~Impl() {
     close(listenfd_);
 }
 
-
 void Server::Impl::run() {
+    request_router_ = RequestRouter(&server_->routes_);
     setup();
     loop();
 }
@@ -102,30 +123,33 @@ void Server::Impl::loop() {
 }
 
 void Server::Impl::dispatch(struct epoll_event *event) {
-    // TODO: Do this repeatedly until EAGAIN/EWOULDBLOCK,
-    // then switch to EPOLLET on the listen_ socket.
-    int client_fd = accept4(
-            event->data.fd,
-            nullptr,
-            nullptr,
+    if (event->data.fd == listenfd_) {
+        while (accept())
+            ;
+    } else {
+        // TODO: do connection work.
+    }
+}
+
+bool Server::Impl::accept() {
+    int client_fd = accept4(listenfd_, nullptr, nullptr,
             SOCK_NONBLOCK | SOCK_CLOEXEC);
 
     if (client_fd == -1) {
-        perror("accept4");
-        return;
+        if (errno != EAGAIN && errno != EWOULDBLOCK)
+            throw error_errno("accept4");
+
+        return false;
     }
 
-    // Placeholder.
-    const char msg[] =
-        "HTTP/1.1 200 OK\r\n"
-        "Server: Shitty\r\n"
-        "Connection: close\r\n"
-        "Content-Type: text/plain; charset=us-ascii\r\n"
-        "Content-Length: 7\r\n"
-        "\r\n"
-        "Hello.\n";
-    send(client_fd, msg, sizeof(msg) - 1, MSG_DONTWAIT);
-    close(client_fd);
+    // TODO: Subscribe FD
+    auto inserted = clients_.emplace(std::make_unique<Connection>(epfd_, client_fd, &request_router_));
+
+    // Go straight into client-receive to take advantage of TCP Fast Open or
+    // TCP_DELAY_ACCEPT.
+    (*inserted.first)->onPollIn();
+
+    return true;
 }
 
 } // namespace

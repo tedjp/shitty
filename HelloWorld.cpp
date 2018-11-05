@@ -1,7 +1,7 @@
 #include <string>
 
-#include <shitty/server.h>
-#include <shitty/static_responder.h>
+#include <shitty/Server.h>
+#include <shitty/StaticResponder.h>
 
 using namespace shitty;
 

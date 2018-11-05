@@ -2,7 +2,7 @@
 #include <cstring>
 #include <string>
 
-#include "error.h"
+#include "Error.h"
 
 namespace shitty {
 

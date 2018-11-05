@@ -1,23 +1,30 @@
-all: wtfd2 shitty
+all: hello-world
 
-run: shitty
-	./shitty
-
-CXX = g++ -std=gnu++17 -Wall -Wextra -Werror -fmax-errors=10
+CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5
 COMPILE_OBJ = $(CXX) -c
 
 %.o: %.cpp %.h
 	$(COMPILE_OBJ) -o $@ $<
 
-OBJS = settings.o socket.o server.o error.o tcpserver.o
+OBJS = \
+	   Connection.o \
+	   Error.o \
+	   Headers.o \
+	   HTTP1Transport.o \
+	   Message.o \
+	   Request.o \
+	   RequestRouter.o \
+	   Server.o \
+	   StaticResponder.o \
+	   StreamBuf.o \
+	   Transport.o \
+	   UnhandledRequestHandler.o \
+	   #
 
-shitty: shitty.cpp $(OBJS)
-	$(CXX) -o $@ $^
-
-wtfd2: wtfd2.cpp $(OBJS)
-	$(CXX) -o $@ $^
+hello-world: HelloWorld.cpp $(OBJS)
+	$(CXX) -I.. -o  $@ $^
 
 clean:
-	rm -f shitty wtfd2 *.o
+	rm -f *.o hello-world
 
 check:

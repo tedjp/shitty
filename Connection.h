@@ -41,6 +41,8 @@ public:
     inline bool operator==(const Connection& other);
 
 private:
+    void subscribe_to_input();
+
     // client fd.
     int fd_ = -1;
     // epoll event fd (not owned).

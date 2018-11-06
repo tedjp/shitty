@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "Connection.h"
+#include "Error.h"
 #include "HTTP1Transport.h"
 
 using shitty::Connection;
@@ -18,6 +19,8 @@ Connection::Connection(int epfd, int fd, RequestRouter* request_router):
 
     if (fd_ < 0)
         throw std::invalid_argument("Connection fd invalid");
+
+    subscribe_to_input();
 }
 
 Connection::Connection(Connection&& other) noexcept:
@@ -47,6 +50,18 @@ Connection::~Connection() {
         close();
     } catch (...)
     {}
+}
+
+void Connection::subscribe_to_input() {
+    struct epoll_event events = {
+        .events = EPOLLIN | EPOLLET,
+        .data = {
+            .ptr = this,
+        }
+    };
+
+    if (epoll_ctl(epfd_, EPOLL_CTL_ADD, fd_, &events) == -1)
+        throw error_errno("Connection EPOLL_CTL_ADD");
 }
 
 int Connection::getPollFD() const {

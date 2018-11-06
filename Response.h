@@ -6,8 +6,8 @@ namespace shitty {
 
 class Response {
 public:
-    // XXX: non-explicit?
     explicit Response(std::string&& body);
+    // TODO: add c'tors to ease providing headers
     Response(unsigned status_code = 200, std::string&& body = std::string());
     Message message;
 

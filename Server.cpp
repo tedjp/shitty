@@ -7,17 +7,21 @@
 
 #include "Connection.h"
 #include "Error.h"
+#include "EventReceiver.h"
 #include "RequestRouter.h"
 #include "Server.h"
 
 namespace shitty {
 
-class Server::Impl {
+class Server::Impl: public EventReceiver {
 public:
     Impl(Server *server);
     ~Impl();
 
     void run();
+
+    int getPollFD() const override;
+    void onPollIn() override;
 
 private:
     void setup();
@@ -100,9 +104,9 @@ void Server::Impl::setup() {
         throw error_errno("listen");
 
     struct epoll_event ev = {
-        .events = EPOLLIN, // TODO: EPOLLET when looping accept()
+        .events = EPOLLIN | EPOLLET,
         .data = {
-            .fd = listenfd_,
+            .ptr = this,
         },
     };
 
@@ -114,7 +118,7 @@ void Server::Impl::loop() {
     struct epoll_event events[10];
     int count;
 
-    while ((count = epoll_wait(epfd_, events, sizeof(events) / sizeof(events[0]), -1)) != -1) {
+    while ((count = epoll_wait(epfd_, events, sizeof(events) / sizeof(events[0]), -1)) != -1 || errno == EINTR) {
         for (int i = 0; i < count; ++i)
             dispatch(&events[i]);
     }
@@ -123,14 +127,30 @@ void Server::Impl::loop() {
 }
 
 void Server::Impl::dispatch(struct epoll_event *event) {
-    if (event->data.fd == listenfd_) {
-        while (accept())
-            ;
-    } else {
-        // TODO: do connection work.
-    }
+    auto target = reinterpret_cast<EventReceiver*>(event->data.ptr);
+
+    // XXX: Beware that the target might be called for multiple events.
+    // That means you cannot delete your receiver during an event callback
+    // or you'll crash. You have to queue it for cleanup after the list of
+    // events has been processed.
+    if (event->events & EPOLLOUT)
+        target->onPollOut();
+    if (event->events & EPOLLIN)
+        target->onPollIn();
+    if (event->events & EPOLLERR)
+        target->onPollErr();
 }
 
+int Server::Impl::getPollFD() const {
+    return listenfd_;
+}
+
+void Server::Impl::onPollIn() {
+    while (accept())
+        ;
+}
+
+// Returns true if a connection was accepted or false if one was not.
 bool Server::Impl::accept() {
     int client_fd = accept4(listenfd_, nullptr, nullptr,
             SOCK_NONBLOCK | SOCK_CLOEXEC);

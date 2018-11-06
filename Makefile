@@ -9,6 +9,7 @@ COMPILE_OBJ = $(CXX) -c
 OBJS = \
 	   Connection.o \
 	   Error.o \
+	   EventReceiver.o \
 	   Headers.o \
 	   HTTP1Transport.o \
 	   Message.o \

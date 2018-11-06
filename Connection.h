@@ -2,13 +2,14 @@
 
 #include <memory>
 
+#include "EventReceiver.h"
 #include "RequestRouter.h"
 #include "StreamBuf.h"
 #include "Transport.h"
 
 namespace shitty {
 
-class Connection {
+class Connection: public EventReceiver {
 public:
     // XXX: Passing the RequestRouter is kind of crap, but the Transport needs
     // to know where to send requests. Maybe split int a Connection base class
@@ -24,8 +25,9 @@ public:
         return fd_;
     }
 
-    void onPollIn();
-    void onPollOut();
+    int getPollFD() const override;
+    void onPollIn() override;
+    void onPollOut() override;
 
     // Send a buffer.
     // Any data that cannot be sent immediately will be queued in the outgoing_
@@ -34,7 +36,7 @@ public:
     // Read from the StreamBuf
     ssize_t recv(void *buf, size_t buflen);
 
-    //void close();
+    void close();
 
     inline bool operator==(const Connection& other);
 

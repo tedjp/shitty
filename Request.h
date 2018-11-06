@@ -12,7 +12,7 @@ public:
     Request(
             const std::string& method,
             const std::string& path,
-            Headers&& headers);
+            Headers&& headers = Headers());
     // HTTP/2 version:
     //Request(Headers&& headers);
 
@@ -24,6 +24,11 @@ public:
         headers();
     inline const Headers&
         headers() const;
+    inline const std::string&
+        body() const;
+    inline std::string&
+        body();
+
 
 private:
     // Request-Line fields
@@ -33,20 +38,28 @@ private:
     Message message_;
 };
 
-const std::string& Request::method() const {
+inline const std::string& Request::method() const {
     return method_;
 }
 
-const std::string& Request::path() const {
+inline const std::string& Request::path() const {
     return path_;
 }
 
-Headers& Request::headers() {
+inline Headers& Request::headers() {
     return message_.headers();
 }
 
-const Headers& Request::headers() const {
+inline const Headers& Request::headers() const {
     return message_.headers();
+}
+
+inline const std::string& Request::body() const {
+    return message_.body();
+}
+
+inline std::string& Request::body() {
+    return message_.body();
 }
 
 }

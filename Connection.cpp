@@ -43,24 +43,59 @@ Connection& Connection::operator=(Connection&& other) noexcept {
 }
 
 Connection::~Connection() {
+    try {
+        close();
+    } catch (...)
+    {}
+}
+
+int Connection::getPollFD() const {
+    return fd_;
+}
+
+void Connection::onPollIn() {
+    bool read_something = false;
+
+    for (;;) {
+        incoming_.grow();
+
+        ssize_t read_len = ::read(
+                fd_,
+                incoming_.tail(),
+                incoming_.tailroom());
+
+        if (read_len > 0) {
+            read_something = true;
+            incoming_.addTailContent(static_cast<size_t>(read_len));
+        }
+
+        if (read_len == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                break;
+
+            close();
+            return;
+        }
+
+        if (read_len == 0 && !read_something) {
+            close();
+            return;
+        }
+    }
+
+    if (read_something)
+        transport_->onInput(incoming_);
+}
+
+void Connection::close() {
     epoll_ctl(epfd_, EPOLL_CTL_DEL, fd_, nullptr);
 
     epfd_ = -1;
     ::close(fd_);
-}
 
-void Connection::onPollIn() {
-    incoming_.grow();
-
-    // TODO: read in safely (ie. not *after* adjusting size, unless it's
-    // guaranteed safe, and in a manner that won't screw up on exception.
-
-    // drain the buffer for now.
-    char buf[4096];
-    while (::read(fd_, buf, sizeof(buf)) > 0)
-        ;
-
-    transport_->onInput(incoming_);
+    // TODO: Notify Server that this object should be destroyed
+    // (but don't self-destruct because there could be more epoll events with
+    // this object's pointer).
 }
 
 void Connection::onPollOut() {

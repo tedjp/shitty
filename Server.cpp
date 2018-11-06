@@ -30,6 +30,7 @@ private:
     void loop();
     void dispatch(struct epoll_event *event);
     bool accept();
+    void close_all_clients();
 
     Server *server_ = nullptr;
 
@@ -131,7 +132,18 @@ void Server::Impl::loop() {
             dispatch(&events[i]);
     }
 
+    int epoll_errno = errno;
+    close_all_clients();
+    errno = epoll_errno;
+
     throw error_errno("epoll_wait");
+}
+
+void Server::Impl::close_all_clients() {
+    for (auto it = clients_.begin(); it != clients_.end(); ++it) {
+        (*it)->close();
+        clients_.erase(it);
+    }
 }
 
 void Server::Impl::dispatch(struct epoll_event *event) {

@@ -11,11 +11,17 @@ public:
     template <typename... Args>
     StaticResponder(Args... args):
         response_(args...)
-    {}
+    {
+        addStandardHeaders();
+    }
 
     void handle(Request&& req, Transport *transport) override;
 
+protected:
+    void addStandardHeaders();
+
 private:
+
     Response response_;
 };
 

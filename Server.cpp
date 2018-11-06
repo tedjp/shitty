@@ -1,6 +1,8 @@
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 
 #include <unordered_set>
@@ -80,6 +82,12 @@ void Server::Impl::run() {
     loop();
 }
 
+static void tcp_defer_accept(int sock) {
+    const int secs = 5;
+    if (setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, &secs, sizeof(secs)) == -1)
+        perror("TCP_DEFER_ACCEPT");
+}
+
 void Server::Impl::setup() {
     listenfd_ = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
     if (listenfd_ == -1)
@@ -90,7 +98,7 @@ void Server::Impl::setup() {
     sin6.sin6_port = htons(80);
     sin6.sin6_addr = in6addr_any;
 
-    // TODO: TCP_DEFER_ACCEPT
+    tcp_defer_accept(listenfd_);
 
     if (::bind(
                 listenfd_,

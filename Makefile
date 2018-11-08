@@ -1,6 +1,6 @@
 all: hello-world
 
-CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5
+CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3
 COMPILE_OBJ = $(CXX) -c
 
 %.o: %.cpp %.h
@@ -17,6 +17,7 @@ OBJS = \
 	   RequestRouter.o \
 	   Server.o \
 	   StaticResponder.o \
+	   StatusStrings.o \
 	   StreamBuf.o \
 	   Transport.o \
 	   UnhandledRequestHandler.o \

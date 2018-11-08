@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "HTTP1Transport.h"
+#include "StatusStrings.h"
 
 #include "Request.h"
 
@@ -289,8 +290,14 @@ HTTP1Transport::requestLine(const Request& req) {
 std::string
 HTTP1Transport::statusLine(const Response& resp) {
     // The majority of UTF-8 text is technically valid, except those that
-    // contain \x00-x1f or \x7f.
-    return "HTTP/1.1 " + std::to_string(resp.statusCode()) + " \xf0\x9f\x98\x8e";
+    // contain \x00-x1f or \x7f, so for now I'm having some fun with the status
+    // reason phrase (which is not carried in HTTP/2 at all).
+    std::string status("HTTP/1.1 xxx \xf0\x9f\x98\x8e");
+    const char *str = status_strings[resp.statusCode()];
+    status[ 9] = str[0];
+    status[10] = str[1];
+    status[11] = str[2];
+    return status;
 }
 
 Request

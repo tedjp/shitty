@@ -38,3 +38,9 @@ void StreamBuf::grow() {
 
     reserve(newcap);
 }
+
+void StreamBuf::write(const void *data, size_t len) {
+    ensure(len);
+    memcpy(tail(), data, len);
+    addTailContent(len);
+}

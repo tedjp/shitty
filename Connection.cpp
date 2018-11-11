@@ -8,11 +8,12 @@
 
 using shitty::Connection;
 
-Connection::Connection(int epfd, int fd, RequestRouter* request_router):
+Connection::Connection(int epfd, int fd, RequestRouter *request_router):
+    EventReceiver(),
     fd_(fd),
     epfd_(epfd),
-    request_router_(request_router),
-    transport_(std::make_unique<HTTP1Transport>(this, request_router_))
+    transport_(std::make_unique<HTTP1Transport>(this, request_router)),
+    manager_(nullptr)
 {
     if (epfd_ < 0)
         throw std::invalid_argument("Bad event FD");
@@ -21,28 +22,6 @@ Connection::Connection(int epfd, int fd, RequestRouter* request_router):
         throw std::invalid_argument("Connection fd invalid");
 
     subscribe_to_input();
-}
-
-Connection::Connection(Connection&& other) noexcept:
-    fd_(-1),
-    epfd_(-1),
-    incoming_(std::move(other.incoming_)),
-    outgoing_(std::move(other.outgoing_)),
-    request_router_(std::move(other.request_router_)),
-    transport_(std::move(other.transport_))
-{
-    std::swap(epfd_, other.epfd_);
-    std::swap(fd_, other.fd_);
-}
-
-Connection& Connection::operator=(Connection&& other) noexcept {
-    std::swap(epfd_, other.epfd_);
-    std::swap(fd_, other.fd_);
-    std::swap(incoming_, other.incoming_);
-    std::swap(outgoing_, other.outgoing_);
-    std::swap(request_router_, other.request_router_);
-    std::swap(transport_, other.transport_);
-    return *this;
 }
 
 Connection::~Connection() {
@@ -56,12 +35,27 @@ void Connection::subscribe_to_input() {
     struct epoll_event events = {
         .events = EPOLLIN | EPOLLET,
         .data = {
-            .ptr = this,
+            .ptr = dynamic_cast<EventReceiver*>(this),
         }
     };
 
     if (epoll_ctl(epfd_, EPOLL_CTL_ADD, fd_, &events) == -1)
         throw error_errno("Connection EPOLL_CTL_ADD");
+}
+
+void Connection::updateSubscription() {
+    struct epoll_event event = {
+        .events = EPOLLIN | EPOLLET,
+        .data = {
+            .ptr = dynamic_cast<EventReceiver*>(this),
+        },
+    };
+
+    if (!outgoing_.empty())
+        event.events |= EPOLLOUT;
+
+    if (epoll_ctl(epfd_, EPOLL_CTL_MOD, fd_, &event) == -1)
+        throw error_errno("Failed to modify connection's epoll");
 }
 
 int Connection::getPollFD() const {
@@ -103,21 +97,78 @@ void Connection::onPollIn() {
 }
 
 void Connection::close() {
+    if (fd_ == -1)
+        return;
+
     epoll_ctl(epfd_, EPOLL_CTL_DEL, fd_, nullptr);
-
     epfd_ = -1;
-    ::close(fd_);
 
-    // TODO: Notify Server that this object should be destroyed
-    // (but don't self-destruct because there could be more epoll events with
-    // this object's pointer).
+    if (manager_)
+        manager_->removeConnection(fd_);
+
+    ::close(fd_);
+    fd_ = -1;
 }
 
 void Connection::onPollOut() {
-    // TODO: flush pending writes
+    if (outgoing_.empty()) {
+        updateSubscription();
+        return;
+    }
+
+    ssize_t sent;
+    do {
+        sent = ::send(fd_, outgoing_.data(), outgoing_.size(), 0);
+        if (sent > 0)
+            outgoing_.advance(static_cast<size_t>(sent));
+    } while (!outgoing_.empty() && sent > 0);
+
+    if (sent < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+        close();
+        return;
+    }
+
+    if (outgoing_.empty())
+        updateSubscription();
+}
+
+void Connection::setConnectionManager(ConnectionManager* manager) {
+    manager_ = manager;
 }
 
 void Connection::send(const void *data, size_t len) {
     // FIXME: Queue unsent outgoing data
     ::send(fd_, data, len, 0);
+}
+
+void Connection::flush() {
+    if (outgoing_.empty())
+        return;
+
+    ssize_t sent;
+
+    do {
+        sent = ::send(fd_, outgoing_.data(), outgoing_.size(), 0);
+
+        if (sent == 0) {
+            close();
+            return;
+        }
+
+        if (sent < 0) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                close();
+                return;
+            }
+        }
+
+        if (sent > 0)
+            outgoing_.advance(static_cast<size_t>(sent));
+    } while (sent > 0 && !outgoing_.empty());
+
+    updateSubscription();
+}
+
+shitty::StreamBuf& Connection::outgoingStreamBuf() {
+    return outgoing_;
 }

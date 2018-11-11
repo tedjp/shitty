@@ -2,6 +2,9 @@
 
 using shitty::EventReceiver;
 
+EventReceiver::~EventReceiver() {
+}
+
 void EventReceiver::onPollIn() {
 }
 

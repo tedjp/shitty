@@ -1,6 +1,6 @@
 all: hello-world
 
-CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3
+CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O0
 COMPILE_OBJ = $(CXX) -c
 
 %.o: %.cpp %.h
@@ -8,6 +8,7 @@ COMPILE_OBJ = $(CXX) -c
 
 OBJS = \
 	   Connection.o \
+	   ConnectionManager.o \
 	   Error.o \
 	   EventReceiver.o \
 	   Headers.o \

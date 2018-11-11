@@ -5,6 +5,8 @@
 
 namespace shitty {
 
+class RequestRouter;
+
 class Transport {
 public:
     virtual void onInput(StreamBuf& buf) = 0;

@@ -4,12 +4,14 @@
 #include <limits>
 
 #include "HTTP1Transport.h"
+#include "Payload.h"
 #include "StatusStrings.h"
 
 #include "Request.h"
 
 using shitty::Headers;
 using shitty::HTTP1Transport;
+using shitty::Payload;
 using shitty::Request;
 
 const char* HTTP1Transport::findEndOfLine(const char *buf, size_t len) {
@@ -266,20 +268,28 @@ std::string HTTP1Transport::renderHeaders(const Headers& headers) {
 }
 
 void HTTP1Transport::writeResponse(const Response& resp) {
-    Connection* conn = connection_; // for convenience
-    // XXX: A better API for building up a response buffer and sending it, eg.
-    // create a StreamBuf, write into it, then send the entire StreamBuf to
-    // Connection::send().
-    // This is very TCP-inefficient and would benefit from that, or TCP_CORK as
-    // a hack/workaround.
+    Payload payload(&connection_->outgoingStreamBuf());
+
     std::string status_line = statusLine(resp);
-    conn->send(status_line.data(), status_line.size());
-    conn->send("\r\n", 2);
-    // FIXME: Set Content-Length or Content-Encoding instead of trusting the
-    // caller.
-    std::string h1headers = renderHeaders(resp.message.headers());
-    conn->send(h1headers.data(), h1headers.size());
-    conn->send(resp.message.body().data(), resp.message.body().size());
+
+    payload.send(status_line.data(), status_line.size());
+    payload.send("\r\n", 2);
+
+    // TODO: Set Server, Date, Content-Length
+    //setResponseHeaders();
+
+    payload.send(renderHeaders(resp.message.headers()));
+
+    // Combine header & body if there's room.
+    if (resp.message.body().size() < payload.tailroom()) {
+        payload.send(resp.message.body());
+        payload.flush();
+        // This API has gone bad.
+        connection_->flush();
+    } else {
+        payload.flush();
+        connection_->send(resp.message.body().data(), resp.message.body().size());
+    }
 }
 
 std::string

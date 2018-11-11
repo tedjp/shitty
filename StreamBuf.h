@@ -43,6 +43,7 @@ public:
         return buf_.data() + in_use_;
     }
 
+    // This is a bad name.
     void addTailContent(size_t size) {
         in_use_ += size;
     }
@@ -50,6 +51,8 @@ public:
     void clear() {
         in_use_ = 0;
     }
+
+    void write(const void *data, size_t len);
 
     // Avoid doing this TBH.
     void shrink_to_fit() {
@@ -63,7 +66,14 @@ public:
     void advance(size_t amount);
 
     inline void reserve(size_t new_size) {
+        if (new_size < buf_.size())
+            return;
+
         buf_.resize(new_size);
+    }
+
+    void ensure(size_t extra_capacity) {
+        reserve(size() + extra_capacity);
     }
 
     // Allocate more room (unspecified amount)

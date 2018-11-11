@@ -12,9 +12,9 @@ namespace shitty {
 
 class HTTP1Transport: public Transport {
 public:
-    HTTP1Transport(Connection *connection, RequestRouter *router):
+    HTTP1Transport(Connection *connection, RequestRouter *request_router):
         connection_(connection),
-        request_router_(router)
+        request_router_(request_router)
     {}
 
     void onInput(StreamBuf& input_buffer) override;

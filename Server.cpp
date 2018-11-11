@@ -5,9 +5,10 @@
 #include <netinet/tcp.h>
 #include <unistd.h>
 
-#include <unordered_set>
+#include <unordered_map>
 
 #include "Connection.h"
+#include "ConnectionManager.h"
 #include "Error.h"
 #include "EventReceiver.h"
 #include "RequestRouter.h"
@@ -15,12 +16,17 @@
 
 namespace shitty {
 
-class Server::Impl: public EventReceiver {
+class Server::Impl:
+    public ConnectionManager,
+    public EventReceiver
+{
 public:
     Impl(Server *server);
     ~Impl();
 
     void run();
+
+    void removeConnection(int fd) override;
 
     int getPollFD() const override;
     void onPollIn() override;
@@ -40,19 +46,11 @@ private:
 
     int listenfd_ = -1;
 
-    struct event_receiver {
-        enum { EV_LISTENER, EV_CONNECTION } type;
-        union {
-            int listener_fd;
-            Connection *connection;
-        };
-    };
-
     RequestRouter request_router_;
 
-    //std::unordered_set<Connection> clients_;
-    // Set element must be const.
-    std::unordered_set<std::unique_ptr<Connection>> clients_;
+    // XXX: Due to the way EventReceivers can't be moved (or the event pointer
+    // dangles), they have to be held by unique_ptr.
+    std::unordered_map<int, std::unique_ptr<Connection>> clients_;
 };
 
 Server::Server():
@@ -75,6 +73,7 @@ Server::Impl::Impl(Server *server):
 }
 
 Server::Impl::~Impl() {
+    close_all_clients();
     close(epfd_);
     close(listenfd_);
 }
@@ -117,7 +116,7 @@ void Server::Impl::setup() {
     struct epoll_event ev = {
         .events = EPOLLIN | EPOLLET,
         .data = {
-            .ptr = this,
+            .ptr = dynamic_cast<EventReceiver*>(this),
         },
     };
 
@@ -149,13 +148,15 @@ void Server::Impl::cleanup() {
 
 void Server::Impl::close_all_clients() {
     for (auto it = clients_.begin(); it != clients_.end(); ++it) {
-        (*it)->close();
+        Connection& conn = *it->second;
+        conn.close();
         clients_.erase(it);
     }
 }
 
 void Server::Impl::dispatch(struct epoll_event *event) {
-    auto target = reinterpret_cast<EventReceiver*>(event->data.ptr);
+    auto target_static_dispatch = reinterpret_cast<EventReceiver*>(event->data.ptr);
+    auto target = dynamic_cast<EventReceiver*>(target_static_dispatch);
 
     // XXX: Beware that the target might be called for multiple events.
     // That means you cannot delete your receiver during an event callback
@@ -190,14 +191,27 @@ bool Server::Impl::accept() {
         return false;
     }
 
-    // TODO: Subscribe FD
-    auto inserted = clients_.emplace(std::make_unique<Connection>(epfd_, client_fd, &request_router_));
+    auto connection_ptr = std::make_unique<Connection>(epfd_, client_fd, &request_router_);
+    auto inserted = clients_.try_emplace(client_fd, std::move(connection_ptr));
+    if (inserted.second == false) {
+        // if connection becomes movable again this needs to be restored.
+        //close(client_fd);
+        return true; // connection was still accepted, briefly
+    }
+
+    auto& connection = *(*inserted.first).second;
+    connection.setConnectionManager(this);
 
     // Go straight into client-receive to take advantage of TCP Fast Open or
     // TCP_DELAY_ACCEPT.
-    (*inserted.first)->onPollIn();
+    connection.onPollIn();
 
     return true;
+}
+
+void Server::Impl::removeConnection(int fd) {
+    // Might already have been removed if initiated by close_all_clients().
+    clients_.erase(fd);
 }
 
 } // namespace

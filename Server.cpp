@@ -5,6 +5,7 @@
 #include <netinet/tcp.h>
 #include <unistd.h>
 
+#include <queue>
 #include <unordered_map>
 
 #include "Connection.h"
@@ -39,6 +40,7 @@ private:
 
     void cleanup();
     void close_all_clients();
+    void remove_dead_clients();
 
     Server *server_ = nullptr;
 
@@ -51,6 +53,8 @@ private:
     // XXX: Due to the way EventReceivers can't be moved (or the event pointer
     // dangles), they have to be held by unique_ptr.
     std::unordered_map<int, std::unique_ptr<Connection>> clients_;
+
+    std::queue<int> remove_clients_;
 };
 
 Server::Server():
@@ -131,6 +135,8 @@ void Server::Impl::loop() {
     while ((count = epoll_wait(epfd_, events, sizeof(events) / sizeof(events[0]), -1)) != -1 || errno == EINTR) {
         for (int i = 0; i < count; ++i)
             dispatch(&events[i]);
+
+        remove_dead_clients();
     }
 
     int epoll_errno = errno;
@@ -138,6 +144,14 @@ void Server::Impl::loop() {
     errno = epoll_errno;
 
     throw error_errno("epoll_wait");
+}
+
+void Server::Impl::remove_dead_clients() {
+    while (!remove_clients_.empty()) {
+        int fd = remove_clients_.front();
+        clients_.erase(fd);
+        remove_clients_.pop();
+    }
 }
 
 void Server::Impl::cleanup() {
@@ -210,8 +224,7 @@ bool Server::Impl::accept() {
 }
 
 void Server::Impl::removeConnection(int fd) {
-    // Might already have been removed if initiated by close_all_clients().
-    clients_.erase(fd);
+    remove_clients_.emplace(fd);
 }
 
 } // namespace

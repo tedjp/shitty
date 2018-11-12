@@ -1,5 +1,3 @@
-#include <string>
-
 #include <shitty/Server.h>
 #include <shitty/StaticResponder.h>
 

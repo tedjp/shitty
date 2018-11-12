@@ -136,37 +136,38 @@ void Connection::setConnectionManager(ConnectionManager* manager) {
     manager_ = manager;
 }
 
-void Connection::send(const void *data, size_t len) {
-    // FIXME: Queue unsent outgoing data
-    ::send(fd_, data, len, 0);
+void Connection::send(const char *data, size_t len) {
+    if (outgoing_.empty())
+        send_immediate(data, len);
+    else
+        queue_and_send(data, len);
 }
 
-void Connection::flush() {
-    if (outgoing_.empty())
-        return;
-
+void Connection::send_immediate(const char *data, size_t len) {
     ssize_t sent;
+    size_t total_sent = 0;
 
     do {
-        sent = ::send(fd_, outgoing_.data(), outgoing_.size(), 0);
-
-        if (sent == 0) {
-            close();
-            return;
-        }
-
-        if (sent < 0) {
-            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                close();
-                return;
-            }
-        }
-
+        sent = ::send(fd_, data + total_sent, len + total_sent, 0);
         if (sent > 0)
-            outgoing_.advance(static_cast<size_t>(sent));
-    } while (sent > 0 && !outgoing_.empty());
+            total_sent += sent;
+    } while (sent > 0 && total_sent < len);
 
-    updateSubscription();
+    if (sent == 0 || (sent < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
+        close();
+        return;
+    }
+
+    if (total_sent < len) {
+        // enqueue
+        size_t remain = len - total_sent;
+        outgoing_.write(data + total_sent, remain);
+    }
+}
+
+void Connection::queue_and_send(const char *data, size_t len) {
+    outgoing_.write(data, len);
+    onPollOut();
 }
 
 shitty::StreamBuf& Connection::outgoingStreamBuf() {

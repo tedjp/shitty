@@ -34,14 +34,10 @@ public:
     // Any data that cannot be sent immediately will be queued in the outgoing_
     // StreamBuf. Use a Payload to combine small writes into a single TCP
     // packet.
-    void send(const void *data, size_t len);
+    void send(const char *data, size_t len);
 
     // Read from the StreamBuf
     ssize_t recv(void *buf, size_t buflen);
-
-    // Writes pending output (if possible) or registers for an onPollOut()
-    // callback when the socket is ready.
-    void flush();
 
     void close();
 
@@ -52,6 +48,9 @@ public:
 private:
     void subscribe_to_input();
     void updateSubscription();
+
+    void send_immediate(const char *data, size_t len);
+    void queue_and_send(const char *data, size_t len);
 
     // client fd.
     int fd_ = -1;

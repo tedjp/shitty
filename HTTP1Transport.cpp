@@ -283,9 +283,8 @@ void HTTP1Transport::writeResponse(const Response& resp) {
     // Combine header & body if there's room.
     if (resp.message.body().size() < payload.tailroom()) {
         payload.send(resp.message.body());
-        payload.flush();
-        // This API has gone bad.
-        connection_->flush();
+        // XXX: This API is grubby
+        connection_->send(reinterpret_cast<const char*>(payload.data()), payload.size());
     } else {
         payload.flush();
         connection_->send(resp.message.body().data(), resp.message.body().size());

@@ -149,6 +149,7 @@ void Server::Impl::loop() {
 void Server::Impl::remove_dead_clients() {
     while (!remove_clients_.empty()) {
         int fd = remove_clients_.front();
+        ::close(fd);
         clients_.erase(fd);
         remove_clients_.pop();
     }

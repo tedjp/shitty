@@ -105,8 +105,9 @@ void Connection::close() {
 
     if (manager_)
         manager_->removeConnection(fd_);
+    else
+        ::close(fd_);
 
-    ::close(fd_);
     fd_ = -1;
 }
 

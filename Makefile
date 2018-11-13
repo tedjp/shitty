@@ -1,6 +1,7 @@
-all: hello-world
+all: hello-world counting
 
-CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O0
+CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
+#CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O0 -march=native
 COMPILE_OBJ = $(CXX) -c
 
 %.o: %.cpp %.h
@@ -9,6 +10,7 @@ COMPILE_OBJ = $(CXX) -c
 OBJS = \
 	   Connection.o \
 	   ConnectionManager.o \
+	   CountingResponder.o \
 	   Error.o \
 	   EventReceiver.o \
 	   Headers.o \
@@ -28,7 +30,10 @@ OBJS = \
 hello-world: HelloWorld.cpp $(OBJS)
 	$(CXX) -I.. -o  $@ $^
 
+counting: CountingServer.cpp $(OBJS)
+	$(CXX) -I.. -o $@ $^
+
 clean:
-	rm -f *.o hello-world
+	rm -f *.o hello-world counting
 
 check:

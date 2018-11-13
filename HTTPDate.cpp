@@ -43,23 +43,34 @@ std::string HTTPDate::now() {
 
     // strftime() is subject to the current locale, so we build the date string
     // ourselves.
-
-    char numeric_fields[sizeof("YYYYDDHHMMSS")];
-    const char fmt_str[] = "%Y%d%H%M%S";
-    ssize_t len = strftime(numeric_fields, sizeof(numeric_fields), fmt_str, &tm);
-    if (len != sizeof(numeric_fields) - 1)
-        throw std::logic_error("Failed to format numeric date fields");
-
+    // Assigning digits piecemeal is significantly faster than using strftime()
+    // to output the numeric values.
     const char *dayOfWeek = daysOfWeek[tm.tm_wday];
     const char *month = months[tm.tm_mon];
 
     memcpy(&str[0], dayOfWeek, 3);
-    memcpy(&str[5], &numeric_fields[4], 2); // day-of-month (number)
+
+    str[5] = '0' + tm.tm_mday / 10;
+    str[6] = '0' + tm.tm_mday % 10;
+
     memcpy(&str[8], month, 3);
-    memcpy(&str[12], &numeric_fields[0], 4); // year
-    memcpy(&str[17], &numeric_fields[6], 2); // hour
-    memcpy(&str[20], &numeric_fields[8], 2); // minute
-    memcpy(&str[23], &numeric_fields[10], 2); // seconnds
+
+    tm.tm_year += 1900;
+
+    // Year 10,000: Check how the HTTP spec wants to handle 5-digit years.
+    str[12] = '0' + tm.tm_year        / 1000;
+    str[13] = '0' + tm.tm_year % 1000 / 100;
+    str[14] = '0' + tm.tm_year %  100 / 10;
+    str[15] = '0' + tm.tm_year %   10;
+
+    str[17] = '0' + tm.tm_hour / 10;
+    str[18] = '0' + tm.tm_hour % 10;
+
+    str[20] = '0' + tm.tm_min / 10;
+    str[21] = '0' + tm.tm_min % 10;
+
+    str[23] = '0' + tm.tm_sec / 10;
+    str[24] = '0' + tm.tm_sec % 10;
 
     return str;
 }

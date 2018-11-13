@@ -275,10 +275,11 @@ void HTTP1Transport::writeResponse(const Response& resp) {
     payload.send(status_line.data(), status_line.size());
     payload.send("\r\n", 2);
 
-    // TODO: Set Server, Date, Content-Length
-    //setResponseHeaders();
+    Headers realHeaders(resp.message.headers());
+    setResponseHeaders(realHeaders);
+    setContentLength(realHeaders, resp.message.body().size());
 
-    payload.send(renderHeaders(resp.message.headers()));
+    payload.send(renderHeaders(realHeaders));
 
     // Combine header & body if there's room.
     if (resp.message.body().size() < payload.tailroom()) {
@@ -289,6 +290,10 @@ void HTTP1Transport::writeResponse(const Response& resp) {
         payload.flush();
         connection_->send(resp.message.body().data(), resp.message.body().size());
     }
+}
+
+void HTTP1Transport::setResponseHeaders(Headers& headers) {
+    setStandardHeaders(headers);
 }
 
 std::string

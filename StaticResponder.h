@@ -21,7 +21,6 @@ protected:
     void addStandardHeaders();
 
 private:
-
     Response response_;
 };
 

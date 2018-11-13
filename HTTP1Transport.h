@@ -21,6 +21,9 @@ public:
 
     void writeResponse(const Response& response) override;
 
+protected:
+    void setResponseHeaders(Headers& headers);
+
 private:
     static const char*
         findEndOfLine(const char* buffer, size_t len);

@@ -13,6 +13,7 @@ OBJS = \
 	   EventReceiver.o \
 	   Headers.o \
 	   HTTP1Transport.o \
+	   HTTPDate.o \
 	   Message.o \
 	   Request.o \
 	   RequestRouter.o \

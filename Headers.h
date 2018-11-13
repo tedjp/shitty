@@ -19,4 +19,9 @@ public:
     std::unordered_multimap<std::string, std::string> kv_;
 };
 
+// Set Date header and set Server header if not already set.
+void setStandardHeaders(Headers& headers);
+
+void setContentLength(Headers& headers, size_t content_length);
+
 } // namespace shitty

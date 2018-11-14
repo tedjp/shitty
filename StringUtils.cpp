@@ -21,13 +21,15 @@ void shitty::trimTrailingLWS(std::string& s) {
         s.resize(i);
 }
 
+static inline bool isLWS(char c) {
+    return c == ' ' || c == '\t';
+}
+
 void shitty::trimLeadingLWS(std::string& s) {
     size_t leading_whitespace = 0;
     size_t slen = s.size();
-    for (size_t i = 0; i < slen; ++i) {
-        if (s[i] == ' ' || s[i] == '\t')
-            ++leading_whitespace;
-    }
+    for (size_t i = 0; i < slen && isLWS(s[i]); ++i)
+        ++leading_whitespace;
 
     if (leading_whitespace == 0)
         return;

@@ -14,7 +14,7 @@ Headers::Headers(std::initializer_list<std::string> headers) {
         if (col == hstr.npos)
             throw std::runtime_error("Malformed string header; ':' required");
 
-        std::string value = hstr.substr(col);
+        std::string value = hstr.substr(col + 1);
         std::string name = std::move(hstr);
         name.resize(col);
 

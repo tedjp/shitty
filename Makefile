@@ -1,4 +1,4 @@
-all: hello-world counting
+all: hello-world counting per-request
 
 CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
 #CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O0 -march=native
@@ -34,7 +34,10 @@ hello-world: HelloWorld.cpp $(OBJS)
 counting: CountingServer.cpp $(OBJS)
 	$(CXX) -I.. -o $@ $^
 
+per-request: PerRequestServer.cpp $(OBJS)
+	$(CXX) -I.. -o $@ $^
+
 clean:
-	rm -f *.o hello-world counting
+	rm -f *.o hello-world counting per-request
 
 check:

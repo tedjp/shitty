@@ -10,7 +10,6 @@ COMPILE_OBJ = $(CXX) -c
 OBJS = \
 	   Connection.o \
 	   ConnectionManager.o \
-	   CountingResponder.o \
 	   Error.o \
 	   EventReceiver.o \
 	   Headers.o \
@@ -19,10 +18,12 @@ OBJS = \
 	   Message.o \
 	   Request.o \
 	   RequestRouter.o \
+	   Response.o \
 	   Server.o \
 	   StaticResponder.o \
 	   StatusStrings.o \
 	   StreamBuf.o \
+	   StringUtils.o \
 	   Transport.o \
 	   UnhandledRequestHandler.o \
 	   #

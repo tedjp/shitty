@@ -3,9 +3,28 @@
 #include "Error.h"
 #include "Headers.h"
 #include "HTTPDate.h"
+#include "StringUtils.h"
 
 using std::string;
 using shitty::Headers;
+
+Headers::Headers(std::initializer_list<std::string> headers) {
+    for (auto& hstr: headers) {
+        auto col = hstr.find(':');
+        if (col == hstr.npos)
+            throw std::runtime_error("Malformed string header; ':' required");
+
+        std::string value = hstr.substr(col);
+        std::string name = std::move(hstr);
+        name.resize(col);
+
+        trimLWS(name);
+        asciiLower(name);
+        trimLWS(value);
+
+        kv_.emplace(std::move(name), std::move(value));
+    }
+}
 
 void Headers::set(const string& name, const string& value) {
     // TODO: case-fold here.

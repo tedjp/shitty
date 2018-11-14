@@ -12,6 +12,7 @@ public:
     Headers(std::initializer_list<Header> headers):
         kv_(headers)
     {}
+    Headers(std::initializer_list<std::string> headers);
     void set(const std::string &name, const std::string& value);
     void add(const std::string &name, const std::string& value);
 

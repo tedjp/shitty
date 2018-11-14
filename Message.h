@@ -1,5 +1,6 @@
 #pragma once
 
+#include <initializer_list>
 #include <string>
 
 #include "Headers.h"
@@ -9,9 +10,14 @@ namespace shitty {
 class Message {
 public:
     Message() = default;
+    // XXX: Just make this templated on all the Headers c'tors.
     explicit Message(Headers&& headers);
     explicit Message(const std::string& body);
     explicit Message(std::string&& body);
+    Message(std::string&& body, std::initializer_list<std::string> headers);
+    Message(std::string&& body, std::initializer_list<Header> headers);
+    Message(std::initializer_list<std::string> headers, std::string&& body);
+    Message(std::initializer_list<Header> headers, std::string&& body);
     Message(const std::string& body, const std::pair<std::string, std::string> header...);
     Message(const std::string& body, const Headers& headers);
     ~Message();

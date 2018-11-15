@@ -2,17 +2,17 @@
 
 #include <utility>
 
-#include "Connection.h"
-#include "Headers.h"
-#include "Request.h"
-#include "RequestRouter.h"
-#include "StreamBuf.h"
+#include "../Connection.h"
+#include "../Headers.h"
+#include "../Request.h"
+#include "../RequestRouter.h"
+#include "../StreamBuf.h"
 
-namespace shitty {
+namespace shitty::http1 {
 
-class HTTP1Transport: public Transport {
+class ServerTransport: public shitty::ServerTransport {
 public:
-    HTTP1Transport(Connection *connection, RequestRouter *request_router):
+    ServerTransport(Connection *connection, RequestRouter *request_router):
         connection_(connection),
         request_router_(request_router)
     {}
@@ -25,16 +25,6 @@ protected:
     void setResponseHeaders(Headers& headers);
 
 private:
-    static const char*
-        findEndOfLine(const char* buffer, size_t len);
-    static std::string
-        renderHeaders(const Headers& headers);
-    static std::string
-        statusLine(const Response& request);
-    static std::string
-        requestLine(const Request& request);
-    static std::optional<std::string>
-        getLine(StreamBuf& buf);
     static Request
         requestFromRequestLine(const std::string& request_line);
 

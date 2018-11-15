@@ -2,7 +2,7 @@
 
 #include "Error.h"
 #include "Headers.h"
-#include "HTTPDate.h"
+#include "Date.h"
 #include "StringUtils.h"
 
 using std::string;
@@ -55,7 +55,7 @@ static void setDateHeader(Headers& headers) {
     if (headers.kv_.find("date") != headers.kv_.end())
         return;
 
-    headers.kv_.emplace("date", shitty::HTTPDate::now());
+    headers.kv_.emplace("date", shitty::Date::now());
 }
 
 static void setServerHeader(Headers& headers) {

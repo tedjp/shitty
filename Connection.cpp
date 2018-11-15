@@ -4,7 +4,8 @@
 
 #include "Connection.h"
 #include "Error.h"
-#include "HTTP1Transport.h"
+#include "http1/ClientTransport.h"
+#include "http1/ServerTransport.h"
 
 using shitty::Connection;
 
@@ -12,7 +13,7 @@ Connection::Connection(int epfd, int fd, RequestRouter *request_router):
     EventReceiver(),
     fd_(fd),
     epfd_(epfd),
-    transport_(std::make_unique<HTTP1Transport>(this, request_router)),
+    transport_(std::make_unique<shitty::http1::ServerTransport>(this, request_router)),
     manager_(nullptr)
 {
     if (epfd_ < 0)
@@ -22,6 +23,20 @@ Connection::Connection(int epfd, int fd, RequestRouter *request_router):
         throw std::invalid_argument("Connection fd invalid");
 
     subscribe_to_input();
+}
+
+Connection::Connection(int epfd, int fd):
+    EventReceiver(),
+    fd_(fd),
+    epfd_(epfd),
+    transport_(std::make_unique<shitty::http1::ClientTransport>(this)),
+    manager_(nullptr)
+{
+    if (epfd_ < 0)
+        throw std::invalid_argument("Bad event FD");
+
+    if (fd_ < 0)
+        throw std::invalid_argument("Connection fd invalid");
 }
 
 Connection::~Connection() {

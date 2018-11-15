@@ -15,7 +15,7 @@ public:
         addStandardHeaders();
     }
 
-    void handle(Request&& req, Transport *transport) override;
+    void handle(Request&& req, ServerTransport *transport) override;
 
 protected:
     void addStandardHeaders();

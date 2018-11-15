@@ -1,36 +1,21 @@
 #include <cstring>
 #include <limits>
 
-#include "HTTP1Transport.h"
-#include "Payload.h"
-#include "Request.h"
-#include "StatusStrings.h"
-#include "StringUtils.h"
+// TODO: header cleanup
+#include "HTTP1.h"
+#include "ServerTransport.h"
+#include "../Payload.h"
+#include "../Request.h"
+#include "../StatusStrings.h"
+#include "../StringUtils.h"
 
-using namespace shitty;
+using namespace shitty::http1;
+using shitty::Headers;
+using shitty::Request;
+using shitty::Response;
+using shitty::StreamBuf;
 
-const char* HTTP1Transport::findEndOfLine(const char *buf, size_t len) {
-    if (len == 0)
-        return nullptr;
-
-    const char *last_nl = nullptr;
-
-    // Optimize for \n-terminated input
-    // XXX: Is this faster than just calling memrchr?
-    if (buf[len - 1] == '\n')
-        last_nl = &buf[len - 1];
-    else
-        last_nl = reinterpret_cast<const char*>(memrchr(buf, '\n', len));
-
-    if (last_nl == nullptr)
-        return nullptr;
-
-    // It's now safe to do a rawmemchr() up to last_nl
-    // In addition, we *know* rawmemchr() will succeed.
-    return reinterpret_cast<const char*>(rawmemchr(buf, '\n')) + 1;
-}
-
-void HTTP1Transport::onInput(StreamBuf& input_buffer) {
+void ServerTransport::onInput(StreamBuf& input_buffer) {
     bool continu;
     do {
         continu = processInput(input_buffer);
@@ -38,7 +23,7 @@ void HTTP1Transport::onInput(StreamBuf& input_buffer) {
 }
 
 // return code is whether we should try to process more input.
-bool HTTP1Transport::processInput(StreamBuf& input_buffer) {
+bool ServerTransport::processInput(StreamBuf& input_buffer) {
     if (input_buffer.isEmpty())
         return false;
 
@@ -76,19 +61,19 @@ bool HTTP1Transport::processInput(StreamBuf& input_buffer) {
     return true;
 }
 
-void HTTP1Transport::readBody(StreamBuf& input_buf) {
+void ServerTransport::readBody(StreamBuf& input_buf) {
     if (expected_body_length_ == -1)
         readChunked(input_buf);
     else
         readContent(input_buf);
 }
 
-void HTTP1Transport::readChunked(StreamBuf& input_buf) {
+void ServerTransport::readChunked(StreamBuf& input_buf) {
     // TODO
     throw std::runtime_error("Chunked input not yet supported");
 }
 
-void HTTP1Transport::readContent(StreamBuf& input_buf) {
+void ServerTransport::readContent(StreamBuf& input_buf) {
     size_t len = std::max(input_buf.size(), static_cast<size_t>(expected_body_length_));
 
     request_in_progress_->body().append(std::string(input_buf.data(), len));
@@ -103,48 +88,19 @@ void HTTP1Transport::readContent(StreamBuf& input_buf) {
     }
 }
 
-void HTTP1Transport::onEndOfRequest() {
+void ServerTransport::onEndOfRequest() {
     handleRequest();
 }
 
-bool HTTP1Transport::isRequestComplete() {
+bool ServerTransport::isRequestComplete() {
     return request_in_progress_.has_value()
         && static_cast<ssize_t>(request_in_progress_->body().size()) == expected_body_length_;
 }
 
-// Get content-length indication, which may be -1 if chunked transfer-encoding
-// is indicated.
-static ssize_t get_content_length(const Headers& headers) {
-    const auto& header_map = headers.kv_;
-
-    auto content_length_it = header_map.find("content-length");
-    if (content_length_it != header_map.end()) {
-        size_t len;
-
-        try {
-            len = std::stoul(content_length_it->second);
-        } catch (std::logic_error&) {
-            throw std::runtime_error("Invalid Content-Length header");
-        }
-
-        if (len > static_cast<size_t>(std::numeric_limits<ssize_t>::max()))
-            throw std::runtime_error("Content-Length too big");
-
-        return static_cast<ssize_t>(len);
-    }
-
-    auto transfer_encoding_it = header_map.find("transfer-encoding");
-    if (transfer_encoding_it != header_map.end())
-        return -1;
-
-    // No indication of a body
-    return 0;
-}
-
-void HTTP1Transport::onEndOfRequestHeaders() {
+void ServerTransport::onEndOfRequestHeaders() {
     request_headers_complete_ = true;
 
-    expected_body_length_ = get_content_length(request_in_progress_->headers());
+    expected_body_length_ = getContentLength(request_in_progress_->headers());
 
     if (isRequestComplete()) {
         handleRequest();
@@ -154,19 +110,19 @@ void HTTP1Transport::onEndOfRequestHeaders() {
     // Wait for request body.
 }
 
-void HTTP1Transport::handleRequest() {
+void ServerTransport::handleRequest() {
     request_router_->route(std::move(*request_in_progress_), this);
     resetIncomingRequest();
 }
 
-void HTTP1Transport::resetIncomingRequest() {
+void ServerTransport::resetIncomingRequest() {
     request_in_progress_.reset();
     last_header_.clear();
     request_headers_complete_ = false;
     expected_body_length_ = 0;
 }
 
-void HTTP1Transport::headerLine(std::string&& line) {
+void ServerTransport::headerLine(std::string&& line) {
     size_t colon = line.find(':');
     if (colon == line.npos)
         throw std::runtime_error("Malformed header: no colon");
@@ -191,7 +147,7 @@ void HTTP1Transport::headerLine(std::string&& line) {
     request_in_progress_->headers().add(std::move(name), std::move(value));
 }
 
-void HTTP1Transport::headerContinuation(std::string&& line) {
+void ServerTransport::headerContinuation(std::string&& line) {
     if (last_header_.empty())
         throw std::runtime_error("Erroneous header continuation");
 
@@ -203,22 +159,7 @@ void HTTP1Transport::headerContinuation(std::string&& line) {
     it->second.append(std::move(line));
 }
 
-std::string HTTP1Transport::renderHeaders(const Headers& headers) {
-    std::string s;
-
-    for (const auto& header: headers.kv_) {
-        s.append(header.first);
-        s.append(": ");
-        s.append(header.second);
-        s.append("\r\n");
-    }
-
-    s.append("\r\n");
-
-    return s;
-}
-
-void HTTP1Transport::writeResponse(const Response& resp) {
+void ServerTransport::writeResponse(const Response& resp) {
     Payload payload(&connection_->outgoingStreamBuf());
 
     std::string status_line = statusLine(resp);
@@ -243,30 +184,12 @@ void HTTP1Transport::writeResponse(const Response& resp) {
     }
 }
 
-void HTTP1Transport::setResponseHeaders(Headers& headers) {
+void ServerTransport::setResponseHeaders(Headers& headers) {
     setStandardHeaders(headers);
 }
 
-std::string
-HTTP1Transport::requestLine(const Request& req) {
-    return req.method() + ' ' + req.path() + " HTTP/1.1";
-}
-
-std::string
-HTTP1Transport::statusLine(const Response& resp) {
-    // The majority of UTF-8 text is technically valid, except those that
-    // contain \x00-x1f or \x7f, so for now I'm having some fun with the status
-    // reason phrase (which is not carried in HTTP/2 at all).
-    std::string status("HTTP/1.1 xxx \xf0\x9f\x98\x8e");
-    const char *str = status_strings[resp.statusCode()];
-    status[ 9] = str[0];
-    status[10] = str[1];
-    status[11] = str[2];
-    return status;
-}
-
 Request
-HTTP1Transport::requestFromRequestLine(const std::string& request_line) {
+ServerTransport::requestFromRequestLine(const std::string& request_line) {
     size_t sp1 = request_line.find(' ');
     if (sp1 == request_line.npos || sp1 == 0)
         throw std::runtime_error("Malformed request");
@@ -275,32 +198,4 @@ HTTP1Transport::requestFromRequestLine(const std::string& request_line) {
     std::string path = request_line.substr(sp1 + 1, sp2 - sp1);
     // Ignoring HTTP-Version token
     return Request(std::move(method), std::move(path));
-}
-
-static void removeTrailingChar(std::string& s, char c) {
-    size_t len = s.size();
-    if (len != 0 && s[len - 1] == c)
-        s.resize(len - 1);
-}
-
-static void trimNewline(std::string& s) {
-    removeTrailingChar(s, '\n');
-    removeTrailingChar(s, '\r');
-}
-
-std::optional<std::string>
-HTTP1Transport::getLine(StreamBuf& buf) {
-    const char *end_of_line = findEndOfLine(buf.data(), buf.size());
-    if (end_of_line == nullptr)
-        return std::nullopt;
-
-    size_t line_len = end_of_line - buf.data();
-
-    std::string line(buf.data(), line_len);
-
-    buf.advance(line_len);
-
-    trimNewline(line);
-
-    return line;
 }

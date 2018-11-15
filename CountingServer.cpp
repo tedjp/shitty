@@ -1,11 +1,12 @@
-#include <shitty/Server.h>
 #include <shitty/Handler.h>
+#include <shitty/Response.h>
+#include <shitty/Server.h>
 
 using namespace shitty;
 
 class CountingResponder: public Handler {
 public:
-    void handle(Request&& request, Transport *transport) override {
+    void handle(Request&& request, ServerTransport *transport) override {
         Response response(
                 {"Content-type: text/plain"},
                 std::to_string(++request_count_) + '\n');

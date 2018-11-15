@@ -13,7 +13,11 @@ namespace shitty {
 
 class Connection: public EventReceiver {
 public:
+    // TODO: Make these static constructors for better naming
+    // Server-side (receive) connection
     Connection(int epfd, int fd, RequestRouter *request_router);
+    // Client-side (send) connection
+    Connection(int epfd, int fd);
     Connection(const Connection&) = delete;
     Connection(Connection&&) = delete;
     Connection& operator=(const Connection&) = delete;

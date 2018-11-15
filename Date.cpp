@@ -3,9 +3,9 @@
 #include <ctime>
 
 #include "Error.h"
-#include "HTTPDate.h"
+#include "Date.h"
 
-using shitty::HTTPDate;
+using shitty::Date;
 
 static constexpr std::array<char[4], 7> daysOfWeek = {
     "Sun",
@@ -32,7 +32,7 @@ static constexpr std::array<char[4], 12> months = {
     "Dec"
 };
 
-std::string HTTPDate::now() {
+std::string Date::now() {
     std::string str{"Sun, 06 Nov 1994 08:49:37 GMT"};
 
     time_t tt = time(nullptr);

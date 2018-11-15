@@ -4,7 +4,7 @@
 
 using namespace shitty;
 
-void RequestRouter::route(Request&& request, Transport *transport) {
+void RequestRouter::route(Request&& request, ServerTransport *transport) {
     Handler *handler = &unhandled_request_handler;
 
     for (const auto& route: *handlers_) {

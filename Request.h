@@ -10,8 +10,8 @@ namespace shitty {
 class Request {
 public:
     Request(
-            const std::string& method,
-            const std::string& path,
+            const std::string& method = {"GET"},
+            const std::string& path = {"/"},
             Headers&& headers = Headers());
     // HTTP/2 version:
     //Request(Headers&& headers);

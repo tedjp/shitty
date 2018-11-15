@@ -4,7 +4,7 @@
 
 namespace shitty {
 
-class HTTPDate {
+class Date {
 public:
     static std::string now();
 };

@@ -2,7 +2,7 @@
 
 using shitty::StaticResponder;
 
-void StaticResponder::handle(Request&& req, Transport *transport) {
+void StaticResponder::handle(Request&& req, ServerTransport *transport) {
     transport->writeResponse(response_);
 }
 

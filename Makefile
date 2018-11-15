@@ -10,11 +10,13 @@ COMPILE_OBJ = $(CXX) -c
 OBJS = \
 	   Connection.o \
 	   ConnectionManager.o \
+	   Date.o \
 	   Error.o \
 	   EventReceiver.o \
 	   Headers.o \
-	   HTTP1Transport.o \
-	   HTTPDate.o \
+	   http1/ClientTransport.o \
+	   http1/HTTP1.o \
+	   http1/ServerTransport.o \
 	   Message.o \
 	   Request.o \
 	   RequestRouter.o \
@@ -38,6 +40,6 @@ per-request: PerRequestServer.cpp $(OBJS)
 	$(CXX) -I.. -o $@ $^
 
 clean:
-	rm -f *.o hello-world counting per-request
+	rm -f *.o http1/*.o hello-world counting per-request
 
 check:

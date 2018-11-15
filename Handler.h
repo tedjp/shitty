@@ -7,7 +7,7 @@ namespace shitty {
 
 class Handler {
 public:
-    virtual void handle(Request&& request, Transport *transport) = 0;
+    virtual void handle(Request&& request, ServerTransport *transport) = 0;
 };
 
 } // namespace

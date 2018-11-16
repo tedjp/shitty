@@ -10,6 +10,15 @@
 
 namespace shitty::http1 {
 
+struct RequestLine {
+    std::string method, path, version;
+};
+
+struct StatusLine {
+    uint_fast16_t code;
+    std::string reason_phrase, version;
+};
+
 std::string
 renderRequest(const Request&);
 
@@ -24,6 +33,12 @@ statusLine(const Response& response);
 
 std::string
 requestLine(const Request& request);
+
+RequestLine
+parseRequestLine(const std::string& request_line);
+
+StatusLine
+parseStatusLine(const std::string& status_line);
 
 std::optional<std::string>
 getLine(StreamBuf& buf);

@@ -3,7 +3,7 @@
 using shitty::StaticResponder;
 
 void StaticResponder::handle(Request&& req, ServerTransport *transport) {
-    transport->writeResponse(response_);
+    transport->sendResponse(response_);
 }
 
 void StaticResponder::addStandardHeaders() {

@@ -25,6 +25,7 @@ Connection::Connection(int epfd, int fd, RequestRouter *request_router):
     subscribe_to_input();
 }
 
+#if 0 // Figure out how to provide the callback function to the ClientTransport
 Connection::Connection(int epfd, int fd):
     EventReceiver(),
     fd_(fd),
@@ -38,6 +39,7 @@ Connection::Connection(int epfd, int fd):
     if (fd_ < 0)
         throw std::invalid_argument("Connection fd invalid");
 }
+#endif
 
 Connection::~Connection() {
     try {

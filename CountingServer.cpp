@@ -11,7 +11,7 @@ public:
                 {"Content-type: text/plain"},
                 std::to_string(++request_count_) + '\n');
 
-        transport->writeResponse(response);
+        transport->sendResponse(response);
     }
 
 private:

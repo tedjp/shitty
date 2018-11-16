@@ -1,5 +1,7 @@
 #include <cstring>
+#include <string_view>
 
+#include "../Error.h"
 #include "../StatusStrings.h"
 #include "HTTP1.h"
 
@@ -119,4 +121,80 @@ getLine(StreamBuf& buf) {
     return line;
 }
 
+static std::string::size_type
+findNextSpaceOrThrow(const std::string& s, std::string::size_type start = 0) {
+    auto sp = s.find(' ', start);
+    if (sp == s.npos)
+        throw ProtocolError("Expected space character");
+    return sp;
 }
+
+RequestLine
+parseRequestLine(const std::string& request_line) {
+    std::string::size_type sp1, sp2;
+
+    try {
+        sp1 = findNextSpaceOrThrow(request_line);
+        sp2 = findNextSpaceOrThrow(request_line, sp1 + 1);
+    }
+    catch (const std::exception&) {
+        throw ProtocolError("Malformed request line");
+    }
+
+    return RequestLine{
+        request_line.substr(0, sp1),
+        request_line.substr(sp1 + 1, sp2 - sp1 - 1),
+        request_line.substr(sp2 + 1),
+    };
+}
+
+template <typename NumericType>
+static NumericType decimalValue(char c) __attribute__((const));
+template <typename NumericType>
+static NumericType decimalValue(char c) {
+    if (!::isdigit(c))
+        throw std::invalid_argument("non-decimal digit");
+
+    return c - '0';
+}
+
+template <typename NumericType>
+static NumericType codeToNumber(const char code[3]) {
+    return
+        decimalValue<NumericType>(code[0]) * 100 +
+        decimalValue<NumericType>(code[1]) *  10 +
+        decimalValue<NumericType>(code[2]);
+}
+
+StatusLine
+parseStatusLine(const std::string& status_line) {
+    std::string::size_type sp1, sp2;
+
+    try {
+        sp1 = findNextSpaceOrThrow(status_line);
+        sp2 = findNextSpaceOrThrow(status_line, sp1 + 1);
+    }
+    catch (const std::exception&) {
+        throw ProtocolError("Malformed status line");
+    }
+
+    std::string_view version(&status_line[0], sp1);
+    std::string_view code(&status_line[sp1 + 1], sp2 - sp1 - 1);
+    std::string_view reason_phrase(&status_line[sp2 + 1], status_line.size() - sp2 - 1);
+
+    if (code.size() != 3)
+        throw ProtocolError(std::string("Invalid status code: ") + std::string(code));
+
+    uint_fast16_t numeric_code;
+
+    try {
+        numeric_code = codeToNumber<uint_fast16_t>(code.data());
+    }
+    catch (const std::exception&) {
+        throw ProtocolError(std::string("Invalid status code: ") + std::string(code));
+    }
+
+    return {numeric_code, std::string(reason_phrase), std::string(version)};
+}
+
+} // namespace

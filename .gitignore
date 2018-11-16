@@ -1,5 +1,7 @@
-/counting
-shitty
 *.o
+
+/counting
+/per-request
+/shitty
 /wtfd2
 /hello-world

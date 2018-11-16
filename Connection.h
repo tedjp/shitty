@@ -13,11 +13,14 @@ namespace shitty {
 
 class Connection: public EventReceiver {
 public:
-    // TODO: Make these static constructors for better naming
+    // TODO: Make these static constructors for better naming, or inherit as
+    // separate types.
+    // Actually the differentiator isn't client/server but self-handle vs.
+    // callback-handle...
     // Server-side (receive) connection
     Connection(int epfd, int fd, RequestRouter *request_router);
     // Client-side (send) connection
-    Connection(int epfd, int fd);
+    //Connection(int epfd, int fd);
     Connection(const Connection&) = delete;
     Connection(Connection&&) = delete;
     Connection& operator=(const Connection&) = delete;

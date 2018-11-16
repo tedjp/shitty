@@ -7,6 +7,11 @@ namespace shitty {
 std::runtime_error
 error_errno(const char *prefix);
 
+struct ProtocolError: std::runtime_error {
+    ProtocolError(const std::string& s): runtime_error(s) {}
+    ProtocolError(const char *s): runtime_error(s) {}
+};
+
 namespace http2 {
 
 enum ErrorCode {

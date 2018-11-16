@@ -12,6 +12,7 @@ public:
     Response(std::initializer_list<std::string> headers, std::string&& body);
     Response(std::initializer_list<Header> headers, std::string&& body);
     Response(unsigned status_code = 200, std::string&& body = std::string());
+    Response(unsigned status_code = 200, Message&& msg = Message());
     Message message;
 
     Headers& headers() { return message.headers(); }

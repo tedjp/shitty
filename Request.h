@@ -9,10 +9,20 @@ namespace shitty {
 
 class Request {
 public:
-    Request(
+#if 0
+    explicit Request(
+            std::string&& method = {"GET"},
+            std::string&& path = {"/"},
+            Headers&& headers = Headers());
+    explicit Request(
             const std::string& method = {"GET"},
             const std::string& path = {"/"},
             Headers&& headers = Headers());
+#endif
+    explicit Request(
+            const std::string& method = {"GET"},
+            const std::string& path = {"/"},
+            Message&& message = Message());
     // HTTP/2 version:
     //Request(Headers&& headers);
 
@@ -29,13 +39,11 @@ public:
     inline std::string&
         body();
 
+    Message message_;
 
 private:
-    // Request-Line fields
     std::string method_;
     std::string path_;
-
-    Message message_;
 };
 
 inline const std::string& Request::method() const {

@@ -47,25 +47,3 @@ void shitty::setContentLength(Headers& headers, size_t content_length) {
 
     headers.kv_.emplace("content-length", std::to_string(content_length));
 }
-
-static void setDateHeader(Headers& headers) {
-    // Ideally the client sets the Date header immediately *before* generating
-    // the response (RFC 7231 § 7.1.1.2 "Date" para. 3), so it might already be
-    // set to some time in the recent past.
-    if (headers.kv_.find("date") != headers.kv_.end())
-        return;
-
-    headers.kv_.emplace("date", shitty::Date::now());
-}
-
-static void setServerHeader(Headers& headers) {
-    if (headers.kv_.find("server") != headers.kv_.end())
-        return;
-
-    headers.kv_.emplace("server", "Shitty");
-}
-
-void shitty::setStandardHeaders(Headers& headers) {
-    setDateHeader(headers);
-    setServerHeader(headers);
-}

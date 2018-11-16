@@ -17,6 +17,7 @@ OBJS = \
 	   http1/ClientTransport.o \
 	   http1/HTTP1.o \
 	   http1/ServerTransport.o \
+	   http1/Transport.o \
 	   Message.o \
 	   Request.o \
 	   RequestRouter.o \

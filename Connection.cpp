@@ -9,11 +9,14 @@
 
 using shitty::Connection;
 
-Connection::Connection(int epfd, int fd, RequestRouter *request_router):
+Connection::Connection(
+        int epfd,
+        int fd,
+        shitty::ServerTransport::req_handler_t&& handler):
     EventReceiver(),
     fd_(fd),
     epfd_(epfd),
-    transport_(std::make_unique<shitty::http1::ServerTransport>(this, request_router)),
+    transport_(std::make_unique<shitty::http1::ServerTransport>(this, std::move(handler))),
     manager_(nullptr)
 {
     if (epfd_ < 0)
@@ -24,22 +27,6 @@ Connection::Connection(int epfd, int fd, RequestRouter *request_router):
 
     subscribe_to_input();
 }
-
-#if 0 // Figure out how to provide the callback function to the ClientTransport
-Connection::Connection(int epfd, int fd):
-    EventReceiver(),
-    fd_(fd),
-    epfd_(epfd),
-    transport_(std::make_unique<shitty::http1::ClientTransport>(this)),
-    manager_(nullptr)
-{
-    if (epfd_ < 0)
-        throw std::invalid_argument("Bad event FD");
-
-    if (fd_ < 0)
-        throw std::invalid_argument("Connection fd invalid");
-}
-#endif
 
 Connection::~Connection() {
     try {

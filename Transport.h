@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 namespace shitty {
 
 class Request;
@@ -23,6 +25,8 @@ protected:
 
 class ClientTransport: virtual public Transport {
 public:
+    using resp_handler_t = std::function<void(Response&&, ClientTransport*)>;
+
     virtual void sendRequest(const Request&) = 0;
 
 protected:
@@ -31,6 +35,8 @@ protected:
 
 class ServerTransport: virtual public Transport {
 public:
+    using req_handler_t = std::function<void(Request&&, ServerTransport*)>;
+
     virtual void sendResponse(const Response&) = 0;
 
 protected:

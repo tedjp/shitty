@@ -8,7 +8,7 @@ class ServerTransport:
     virtual public shitty::ServerTransport,
     virtual public shitty::http1::Transport {
 public:
-    ServerTransport(Connection *connection, RequestRouter *request_router);
+    ServerTransport(Connection *connection, req_handler_t&& request_handler);
 
     // from shitty::ServerTransport
     void sendResponse(const Response&) override;
@@ -19,7 +19,7 @@ public:
 private:
     void handle(Request&&);
 
-    RequestRouter *request_router_;
+    req_handler_t request_handler_;
 };
 
 } // namespace

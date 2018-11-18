@@ -12,7 +12,6 @@ public:
     RequestRouter() = default;
     RequestRouter(const std::vector<Route>* handlers);
 
-    // XXX: std::unique_ptr<Request> instead?
     void route(Request&& request, ServerTransport *transport);
 
 private:

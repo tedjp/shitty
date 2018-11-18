@@ -4,6 +4,8 @@
 
 #include "StringUtils.h"
 
+// These are all good candidates to be declared inline.
+
 void shitty::trimTrailingLWS(std::string& s) {
     size_t initial_size = s.size();
     size_t i = initial_size;
@@ -48,4 +50,15 @@ void shitty::asciiLower(std::string& s) {
     std::transform(s.begin(), s.end(), s.begin(), [](char c) {
             return static_cast<char>(::tolower(c));
         });
+}
+
+// A moving-split operation that only allocates one new string, reusing the
+// input for one of the output parameters.
+// Convenient in combination with C++17 structured bindings:
+// auto [left, right] = split(std::move(my_string), separator);
+std::pair<std::string, std::string>
+shitty::split(std::string&& src, std::string::size_type pos) {
+    std::string second = src.substr(pos);
+    src.resize(pos);
+    return {std::move(src), std::move(second)};
 }

@@ -10,8 +10,6 @@ class ClientTransport:
     virtual public shitty::ClientTransport,
     virtual public shitty::http1::Transport {
 public:
-    using resp_handler_t = std::function<void(Response&&)>;
-
     ClientTransport(Connection *connection, resp_handler_t&& handler);
 
     // from shitty::ClientTransport

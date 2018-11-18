@@ -26,7 +26,6 @@ OBJS = \
 	   StaticResponder.o \
 	   StatusStrings.o \
 	   StreamBuf.o \
-	   StringUtils.o \
 	   Transport.o \
 	   UnhandledRequestHandler.o \
 	   #

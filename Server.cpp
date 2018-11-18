@@ -194,6 +194,15 @@ void Server::Impl::onPollIn() {
         ;
 }
 
+static ServerTransport::req_handler_t
+make_request_handler(RequestRouter* router) {
+    return std::bind(
+            std::mem_fn(&RequestRouter::route),
+            router,
+            std::placeholders::_1,
+            std::placeholders::_2);
+}
+
 // Returns true if a connection was accepted or false if one was not.
 bool Server::Impl::accept() {
     int client_fd = accept4(listenfd_, nullptr, nullptr,
@@ -206,7 +215,8 @@ bool Server::Impl::accept() {
         return false;
     }
 
-    auto connection_ptr = std::make_unique<Connection>(epfd_, client_fd, &request_router_);
+    auto connection_ptr = std::make_unique<Connection>(epfd_, client_fd,
+            make_request_handler(&request_router_));
     auto inserted = clients_.try_emplace(client_fd, std::move(connection_ptr));
     if (inserted.second == false) {
         // if connection becomes movable again this needs to be restored.

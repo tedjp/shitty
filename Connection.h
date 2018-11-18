@@ -18,9 +18,9 @@ public:
     // Actually the differentiator isn't client/server but self-handle vs.
     // callback-handle...
     // Server-side (receive) connection
-    Connection(int epfd, int fd, RequestRouter *request_router);
+    Connection(int epfd, int fd, ServerTransport::req_handler_t&& req_handler);
     // Client-side (send) connection
-    //Connection(int epfd, int fd);
+    Connection(int epfd, int fd, ClientTransport::resp_handler_t&& resp_handler);
     Connection(const Connection&) = delete;
     Connection(Connection&&) = delete;
     Connection& operator=(const Connection&) = delete;

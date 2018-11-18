@@ -1,30 +1,27 @@
-# shitty - A useless HTTP/2 server
-Upgrades HTTP/1 clients to HTTP/2, then tells
-them to GOAWAY and closes the connection.
+# shitty — A C++ HTTP Server library
 
-HTTP/1.1 clients get an "Upgrade Required" message.
+## Examples
 
-It's single threaded which is either because I'm too lazy to make it
-high-performance, event-driven *and* multi-threaded, or because being
-single-threaded makes it more shitty.
+### [HelloWorld](HelloWorld.cpp)
 
-Runs on port 8080, or port 80 if you like to live dangerously and run untrusted
-code as root.
+A simple example of serving static responses.
 
-Usage
-=====
+### [CountingServer](CountingServer.cpp)
 
-    make run
+A server that maintains some state, responding to each request with the number
+of requests served so far.
 
-HPACK — HTTP/2 header compression
-=================================
+### [PerRequestServer](PerRequestServer.cpp)
+
+An example of a server that creates a new handler instance for each request.
+
+## Usage
+
+    make && sudo ./hello-world
+
+## HPACK — HTTP/2 header compression
 
 Includes a functional implementation of HPACK, HTTP/2's header
-compression/decompression algorithm. It's not used by the shitty daemon yet.
+compression/decompression algorithm. It's not integrated into the server just
+yet.
 See the `hpack` & `hpack/huffy` directories.
-
-See also
-========
-
-If you like useless daemons, you might also be interested in
-[wtfd](https://github.com/tedjp/wtfd).

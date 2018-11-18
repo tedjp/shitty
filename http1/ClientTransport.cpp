@@ -26,5 +26,5 @@ void ClientTransport::handleIncomingMessage(IncomingMessage&& msg) {
 }
 
 void ClientTransport::handle(Response&& resp) {
-    handler_(std::move(resp));
+    handler_(std::move(resp), this);
 }

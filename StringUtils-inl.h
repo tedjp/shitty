@@ -4,8 +4,6 @@
 
 #include "StringUtils.h"
 
-// These are all good candidates to be declared inline.
-
 void shitty::trimTrailingLWS(std::string& s) {
     size_t initial_size = s.size();
     size_t i = initial_size;

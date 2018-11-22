@@ -11,12 +11,10 @@ using shitty::Connection;
 
 Connection::Connection(
         int epfd,
-        int fd,
-        shitty::ServerTransport::req_handler_t&& handler):
+        int fd):
     EventReceiver(),
     fd_(fd),
     epfd_(epfd),
-    transport_(std::make_unique<shitty::http1::ServerTransport>(this, std::move(handler))),
     manager_(nullptr)
 {
     if (epfd_ < 0)
@@ -26,6 +24,10 @@ Connection::Connection(
         throw std::invalid_argument("Connection fd invalid");
 
     subscribe_to_input();
+}
+
+void Connection::setTransport(std::unique_ptr<Transport>&& transport) {
+    transport_ = std::move(transport);
 }
 
 Connection::~Connection() {
@@ -96,8 +98,12 @@ void Connection::onPollIn() {
         }
     }
 
-    if (read_something)
+    if (read_something) {
+        if (!transport_)
+            throw std::logic_error("No transport assigned");
+
         transport_->onInput(incoming_);
+    }
 }
 
 void Connection::close() {

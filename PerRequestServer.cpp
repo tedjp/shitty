@@ -1,4 +1,4 @@
-#include <shitty/Handler.h>
+#include <shitty/PerRequestHandler.h>
 #include <shitty/Response.h>
 #include <shitty/Server.h>
 
@@ -18,15 +18,9 @@ private:
     uint64_t request_count_ = 0;
 };
 
-template <typename HandlerT>
-class PerRequestHandler: public Handler {
-    void handle(Request&& request, ServerTransport *transport) override {
-        HandlerT instance;
-
-        instance.handle(std::move(request), transport);
-    }
-};
-
+// This example illustrates how the PerRequestHandler creates a new instance of
+// CountingResponder for each request, so every request gets the same response;
+// that it is the first to be handled.
 int main() {
     Server()
         .addHandler("/", PerRequestHandler<CountingResponder>())

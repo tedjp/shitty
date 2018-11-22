@@ -5,7 +5,7 @@ using namespace shitty::http1;
 using shitty::Response;
 
 ServerTransport::ServerTransport(
-        Connection *connection,
+        Connection* connection,
         req_handler_t&& request_handler):
     shitty::http1::Transport(connection),
     request_handler_(request_handler)

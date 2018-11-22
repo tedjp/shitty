@@ -7,6 +7,9 @@ namespace shitty {
 std::runtime_error
 error_errno(const char *prefix);
 
+std::runtime_error
+error_errno(const char *prefix, int err);
+
 struct ProtocolError: std::runtime_error {
     ProtocolError(const std::string& s): runtime_error(s) {}
     ProtocolError(const char *s): runtime_error(s) {}

@@ -14,6 +14,7 @@
 #include "EventReceiver.h"
 #include "RequestRouter.h"
 #include "Server.h"
+#include "http1/ServerTransport.h"
 
 namespace shitty {
 
@@ -162,11 +163,7 @@ void Server::Impl::cleanup() {
 }
 
 void Server::Impl::close_all_clients() {
-    for (auto it = clients_.begin(); it != clients_.end(); ++it) {
-        Connection& conn = *it->second;
-        conn.close();
-        clients_.erase(it);
-    }
+    clients_.clear();
 }
 
 void Server::Impl::dispatch(struct epoll_event *event) {
@@ -215,21 +212,24 @@ bool Server::Impl::accept() {
         return false;
     }
 
-    auto connection_ptr = std::make_unique<Connection>(epfd_, client_fd,
-            make_request_handler(&request_router_));
-    auto inserted = clients_.try_emplace(client_fd, std::move(connection_ptr));
-    if (inserted.second == false) {
-        // if connection becomes movable again this needs to be restored.
-        //close(client_fd);
-        return true; // connection was still accepted, briefly
-    }
+    auto connection = std::make_unique<Connection>(epfd_, client_fd);
+    connection->setConnectionManager(this);
+    connection->setTransport(std::make_unique<http1::ServerTransport>(
+                connection.get(),
+                make_request_handler(&request_router_)));
 
-    auto& connection = *(*inserted.first).second;
-    connection.setConnectionManager(this);
+    auto [iter, inserted] = clients_.try_emplace(client_fd, std::move(connection));
+
+    if (inserted == false)
+        throw std::logic_error("Accepted new connection with existing fd");
 
     // Go straight into client-receive to take advantage of TCP Fast Open or
     // TCP_DELAY_ACCEPT.
-    connection.onPollIn();
+    // XXX: Since the connection is already subscribed it'll get an EPOLLIN
+    // event that we've already handled. If we swap the order of this immediate
+    // read with the subscribe call, it'll avoid that.
+    Connection& conn = *iter->second;
+    conn.onPollIn();
 
     return true;
 }

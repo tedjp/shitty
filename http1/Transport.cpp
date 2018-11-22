@@ -15,7 +15,7 @@ using shitty::Request;
 using shitty::Response;
 using shitty::StreamBuf;
 
-Transport::Transport(Connection *connection):
+Transport::Transport(Connection* connection):
     connection_(connection)
 {}
 

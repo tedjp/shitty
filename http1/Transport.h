@@ -13,7 +13,7 @@ namespace shitty::http1 {
 
 class Transport: virtual public shitty::Transport {
 public:
-    Transport(Connection *connection);
+    Transport(Connection* connection);
 
     void onInput(StreamBuf& input_buffer) override;
 
@@ -49,7 +49,7 @@ private:
     // terminal chunk is read.
     ssize_t expected_body_length_ = 0;
 
-    Connection *connection_;
+    Connection* connection_;
 };
 
 }

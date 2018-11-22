@@ -37,6 +37,7 @@ public:
     void onPollOut() override;
 
     void setTransport(std::unique_ptr<Transport>&&);
+    inline Transport* getTransport();
     void setConnectionManager(ConnectionManager *manager);
 
     // Send a buffer.
@@ -70,7 +71,11 @@ private:
     ConnectionManager *manager_;
 };
 
-bool Connection::operator==(const Connection& other) {
+inline Transport* Connection::getTransport() {
+    return transport_.get();
+}
+
+inline bool Connection::operator==(const Connection& other) {
     return fd_ == other.fd_;
 }
 

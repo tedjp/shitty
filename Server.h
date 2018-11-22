@@ -20,6 +20,8 @@ public:
 
     void run();
 
+    int epollFD();
+
 private:
     std::vector<Route> routes_;
 

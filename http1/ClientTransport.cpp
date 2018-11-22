@@ -6,19 +6,18 @@ using shitty::Request;
 using shitty::Response;
 
 ClientTransport::ClientTransport(
-        std::unique_ptr<Connection>&& connection,
+        Connection* connection,
         resp_handler_t&& handler):
-    shitty::http1::Transport(connection.get()),
-    connection_(std::move(connection)),
+    shitty::http1::Transport(connection),
+    connection_(connection),
     handler_(std::move(handler))
 {
-    // TODO: Relax this requirement so that it's only required to be non-null
-    // when sendRequest() is called.
-    if (handler == nullptr)
-        throw std::invalid_argument("ClientTransport requires a non-null Handler");
 }
 
 void ClientTransport::sendRequest(const Request& req) {
+    if (!handler_)
+        throw std::invalid_argument("ClientTransport requires a non-null Handler when sending request");
+
     sendMessage(requestLine(req), req.message_);
 }
 

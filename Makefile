@@ -1,4 +1,4 @@
-all: hello-world counting per-request
+all: hello-world counting per-request proxy
 
 CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
 #CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O0 -march=native
@@ -8,6 +8,7 @@ COMPILE_OBJ = $(CXX) -c
 	$(COMPILE_OBJ) -o $@ $<
 
 OBJS = \
+	   ClientTransportSource.o \
 	   Connection.o \
 	   ConnectionManager.o \
 	   Date.o \
@@ -19,6 +20,7 @@ OBJS = \
 	   http1/ServerTransport.o \
 	   http1/Transport.o \
 	   Message.o \
+	   ProxyHandler.o \
 	   Request.o \
 	   RequestRouter.o \
 	   Response.o \
@@ -39,7 +41,10 @@ counting: CountingServer.cpp $(OBJS)
 per-request: PerRequestServer.cpp $(OBJS)
 	$(CXX) -I.. -o $@ $^
 
+proxy: ProxyServer.cpp $(OBJS)
+	$(CXX) -I.. -o $@ $^
+
 clean:
-	rm -f *.o http1/*.o hello-world counting per-request
+	rm -f *.o http1/*.o hello-world counting per-request proxy
 
 check:

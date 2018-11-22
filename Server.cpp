@@ -33,6 +33,8 @@ public:
     int getPollFD() const override;
     void onPollIn() override;
 
+    int epollFD();
+
 private:
     void setup();
     void loop();
@@ -64,6 +66,10 @@ Server::Server():
 
 void Server::run() {
     impl_->run();
+}
+
+int Server::epollFD() {
+    return impl_->epollFD();
 }
 
 Server::~Server() {
@@ -236,6 +242,10 @@ bool Server::Impl::accept() {
 
 void Server::Impl::removeConnection(int fd) {
     remove_clients_.emplace(fd);
+}
+
+int Server::Impl::epollFD() {
+    return epfd_;
 }
 
 } // namespace

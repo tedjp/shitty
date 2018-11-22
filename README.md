@@ -15,6 +15,10 @@ of requests served so far.
 
 An example of a server that creates a new handler instance for each request.
 
+### [ProxyServer](ProxyServer.cpp)
+
+A simple HTTP proxy.
+
 ## Usage
 
     make && sudo ./hello-world

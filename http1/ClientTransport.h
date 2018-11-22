@@ -10,7 +10,7 @@ class ClientTransport:
     virtual public shitty::ClientTransport,
     virtual public shitty::http1::Transport {
 public:
-    ClientTransport(std::unique_ptr<Connection>&& connection, resp_handler_t&& handler);
+    ClientTransport(Connection* connection, resp_handler_t&& handler = resp_handler_t());
 
     // from shitty::ClientTransport
     void sendRequest(const Request& request) override;
@@ -23,7 +23,7 @@ public:
 protected:
     void handle(Response&&);
 
-    std::unique_ptr<Connection> connection_;
+    Connection* connection_;
     resp_handler_t handler_ = nullptr;
 };
 

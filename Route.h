@@ -3,19 +3,28 @@
 #include <memory>
 #include <string>
 
-#include "Handler.h"
+#include "RequestHandlerFactory.h"
 
 namespace shitty { 
 
 struct Route {
-    template <typename HandlerT>
-    Route(const std::string& path_param, HandlerT&& handler_param):
-        path(path_param),
-        handler(std::make_unique<HandlerT>(std::move(handler_param)))
+    Route(
+            const std::string& path,
+            std::unique_ptr<RequestHandlerFactory>&& factory):
+        path(path),
+        handler_factory(std::move(factory))
     {}
 
+#if 0
+    template <typename HandlerT, typename... HandlerArgs>
+    Route(const std::string& path_param, HandlerArgs... handler_args):
+        path(path_param),
+        handler_factory(std::make_unique<AutoRequestHandlerFactory<HandlerT>>(std::move(handler_args)...))
+    {}
+#endif
+
     std::string path;
-    std::unique_ptr<Handler> handler;
+    std::unique_ptr<RequestHandlerFactory> handler_factory;
 };
 
 } // namespace shitty

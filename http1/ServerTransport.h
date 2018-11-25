@@ -10,18 +10,19 @@ class ServerTransport:
 public:
     ServerTransport(
             Connection* connection,
-            req_handler_t&& request_handler);
+            RequestRouter* request_router);
 
     // from shitty::ServerTransport
+    void onRequest(Request&&) override;
     void sendResponse(const Response&) override;
 
+protected:
     // from shitty::http1::Transport
     void handleIncomingMessage(IncomingMessage&&) override;
 
 private:
-    void handle(Request&&);
-
-    req_handler_t request_handler_;
+    RequestRouter* request_router_;
+    std::unique_ptr<RequestHandler> request_handler_;
 };
 
 } // namespace

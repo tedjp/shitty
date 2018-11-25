@@ -1,8 +1,9 @@
+#include "ServerTransport.h"
 #include "StaticResponder.h"
 
 using shitty::StaticResponder;
 
-void StaticResponder::handle(Request&& req, ServerTransport *transport) {
+void StaticResponder::onRequest(Request&& req, ServerTransport *transport) {
     transport->sendResponse(response_);
 }
 

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Handler.h"
+#include "RequestHandler.h"
 #include "Response.h"
 
 namespace shitty {
 
-class StaticResponder: public Handler {
+class StaticResponder: public RequestHandler {
 public:
     // Allow construction using all Response c'tors
     template <typename... Args>
@@ -15,7 +15,7 @@ public:
         addStandardHeaders();
     }
 
-    void handle(Request&& req, ServerTransport *transport) override;
+    void onRequest(Request&& req, ServerTransport *transport) override;
 
 protected:
     void addStandardHeaders();

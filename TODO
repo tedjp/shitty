@@ -1,0 +1,11 @@
+- Handle backend connection/request failure!
+- Catch exception in handler without killing server.
+- Prevent pipelining (or ensure it's handled safely; eg. a queue) rather than
+  probably starting on a new request before the previous one completes.
+- Replace epollFD() calls in proxy w/ Events type.
+  And possibly a default thread-local instance.
+- HTTP2Transport
+- Separate Transport from Stream;
+  Transport implements protocol/mux, Stream is {client,server} interface.
+  ClientTransportSource should be a StreamSource that internally uses a
+  Transport/Connection.

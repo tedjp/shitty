@@ -4,15 +4,13 @@
 
 using namespace shitty;
 
-void RequestRouter::route(Request&& request, ServerTransport *transport) {
-    Handler *handler = &unhandled_request_handler;
-
-    for (const auto& route: *handlers_) {
+std::unique_ptr<RequestHandler>
+RequestRouter::getHandler(const Request& request) {
+    for (const auto& route: *routes_) {
         if (request.path().compare(0, route.path.size(), route.path) == 0) {
-            handler = route.handler.get();
-            break;
+            return route.handler_factory->getHandler();
         }
     }
 
-    handler->handle(std::move(request), transport);
+    return {};
 }

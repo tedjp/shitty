@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "../ClientTransport.h"
 #include "Transport.h"
 
 namespace shitty::http1 {

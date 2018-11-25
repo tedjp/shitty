@@ -22,6 +22,7 @@ OBJS = \
 	   Message.o \
 	   ProxyHandler.o \
 	   Request.o \
+	   RequestHandler.o \
 	   RequestRouter.o \
 	   Response.o \
 	   Server.o \

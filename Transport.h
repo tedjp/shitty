@@ -1,8 +1,7 @@
 #pragma once
 
-#include <functional>
-
 #include "Headers.h"
+#include "StreamBuf.h"
 
 namespace shitty {
 
@@ -23,28 +22,6 @@ public:
 
 protected:
     virtual void setGeneralHeaders(Headers&) {}
-};
-
-class ClientTransport: virtual public Transport {
-public:
-    using resp_handler_t = std::function<void(Response&&, ClientTransport*)>;
-
-    virtual void sendRequest(const Request&) = 0;
-    virtual void setHandler(resp_handler_t&&) = 0;
-    virtual void resetHandler() = 0;
-
-protected:
-    void setGeneralHeaders(Headers&) override;
-};
-
-class ServerTransport: virtual public Transport {
-public:
-    using req_handler_t = std::function<void(Request&&, ServerTransport*)>;
-
-    virtual void sendResponse(const Response&) = 0;
-
-protected:
-    void setGeneralHeaders(Headers&) override;
 };
 
 }

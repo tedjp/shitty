@@ -8,6 +8,7 @@ int main() {
     Server server;
     ClientTransportSource client_source(server.epollFD());
 
-    server.addHandler("/", ProxyHandler(&client_source));
+    server.addHandler("/",
+            std::make_unique<ProxyHandlerFactory>(&client_source));
     server.run();
 }

@@ -19,7 +19,7 @@ public:
 
 protected:
     virtual void handleIncomingMessage(IncomingMessage&&) = 0;
-    void sendMessage(const std::string& first_line, const Message& message);
+    virtual void sendMessage(const std::string& first_line, const Message& message);
 
 private:
     static IncomingMessage

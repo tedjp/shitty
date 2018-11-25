@@ -1,6 +1,7 @@
 #include "Date.h"
 #include "Headers.h"
-#include "Transport.h"
+#include "ClientTransport.h"
+#include "ServerTransport.h"
 
 using namespace shitty;
 

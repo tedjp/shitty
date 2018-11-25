@@ -197,15 +197,6 @@ void Server::Impl::onPollIn() {
         ;
 }
 
-static ServerTransport::req_handler_t
-make_request_handler(RequestRouter* router) {
-    return std::bind(
-            std::mem_fn(&RequestRouter::route),
-            router,
-            std::placeholders::_1,
-            std::placeholders::_2);
-}
-
 // Returns true if a connection was accepted or false if one was not.
 bool Server::Impl::accept() {
     int client_fd = accept4(listenfd_, nullptr, nullptr,
@@ -222,7 +213,7 @@ bool Server::Impl::accept() {
     connection->setConnectionManager(this);
     connection->setTransport(std::make_unique<http1::ServerTransport>(
                 connection.get(),
-                make_request_handler(&request_router_)));
+                &request_router_));
 
     auto [iter, inserted] = clients_.try_emplace(client_fd, std::move(connection));
 

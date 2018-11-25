@@ -4,27 +4,52 @@
 #include <string>
 
 #include "RequestHandlerFactory.h"
+#include "StaticResponder.h"
 
 namespace shitty { 
 
-struct Route {
-    Route(
-            const std::string& path,
-            std::unique_ptr<RequestHandlerFactory>&& factory):
-        path(path),
-        handler_factory(std::move(factory))
-    {}
+class Route {
+public:
+    explicit Route(const std::string& path);
+    explicit Route(std::string&& path);
 
-#if 0
-    template <typename HandlerT, typename... HandlerArgs>
-    Route(const std::string& path_param, HandlerArgs... handler_args):
-        path(path_param),
-        handler_factory(std::make_unique<AutoRequestHandlerFactory<HandlerT>>(std::move(handler_args)...))
-    {}
-#endif
+    inline const std::string& path() const;
 
-    std::string path;
-    std::unique_ptr<RequestHandlerFactory> handler_factory;
+    virtual std::unique_ptr<RequestHandler> getHandler(Request&&) const = 0;
+
+private:
+    std::string path_;
+};
+
+namespace detail {
+class StaticRouteHandlerFactory;
+}
+
+class StaticRoute: public Route {
+public:
+    StaticRoute(const std::string& path, const StaticResponder& responder);
+    // For non-copyable static responder
+    StaticRoute(std::string&& path, StaticResponder&& responder);
+
+    std::unique_ptr<RequestHandler> getHandler(Request&&) const override;
+
+private:
+    StaticResponder responder_;
+
+    std::unique_ptr<detail::StaticRouteHandlerFactory> factory_;
+};
+
+class FactoryRoute: public Route {
+public:
+    FactoryRoute(const std::string& path, std::unique_ptr<RequestHandlerFactory>&& factory);
+    FactoryRoute(const std::string& path, const RequestHandlerFactory& factory);
+
+    std::unique_ptr<RequestHandler> getHandler(Request&&) const override;
+
+private:
+    std::unique_ptr<RequestHandlerFactory> factory_;
 };
 
 } // namespace shitty
+
+#include "Route-inl.h"

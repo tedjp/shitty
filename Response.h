@@ -7,8 +7,6 @@ namespace shitty {
 class Response {
 public:
     explicit Response(std::string&& body);
-    Response(std::string&& body, std::initializer_list<std::string> headers);
-    Response(std::string&& body, std::initializer_list<Header> headers);
     Response(std::initializer_list<std::string> headers, std::string&& body);
     Response(std::initializer_list<Header> headers, std::string&& body);
     Response(unsigned status_code = 200, std::string&& body = std::string());

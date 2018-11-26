@@ -1,13 +1,5 @@
 namespace shitty {
 
-Route::Route(const std::string& path):
-    path_(path)
-{}
-
-Route::Route(std::string&& path):
-    path_(std::move(path))
-{}
-
 inline const std::string& Route::path() const {
     return path_;
 }
@@ -45,11 +37,4 @@ private:
 };
 
 } // namespace detail
-
-StaticRoute::StaticRoute(const std::string& path, const StaticResponder& responder):
-    Route(path),
-    responder_(responder),
-    factory_(std::make_unique<detail::StaticRouteHandlerFactory>(&responder_))
-{}
-
 } // namespace shitty

@@ -1,4 +1,5 @@
 #include "ProxyHandler.h"
+#include "ServerTransport.h"
 
 using namespace shitty;
 

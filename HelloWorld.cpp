@@ -5,6 +5,6 @@ using namespace shitty;
 
 int main() {
     Server()
-        .addHandler("/", StaticResponder("Hello, world!\n"))
+        .addStaticHandler("/", "Hello, world!\n")
         .run();
 }

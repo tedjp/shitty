@@ -5,7 +5,6 @@
 
 #include "ConnectionManager.h"
 #include "EventReceiver.h"
-#include "RequestRouter.h"
 #include "StreamBuf.h"
 #include "Transport.h"
 

@@ -10,7 +10,7 @@ public:
     // Allow construction using all Response c'tors
     template <typename... Args>
     StaticResponder(Args... args):
-        response_(args...)
+        response_(std::move(args)...)
     {
         addStandardHeaders();
     }

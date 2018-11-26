@@ -15,7 +15,7 @@ public:
 
     inline const std::string& path() const;
 
-    virtual std::unique_ptr<RequestHandler> getHandler(Request&&) const = 0;
+    virtual std::unique_ptr<RequestHandler> getHandler() const = 0;
 
 private:
     std::string path_;
@@ -31,7 +31,7 @@ public:
     // For non-copyable static responder
     StaticRoute(std::string&& path, StaticResponder&& responder);
 
-    std::unique_ptr<RequestHandler> getHandler(Request&&) const override;
+    std::unique_ptr<RequestHandler> getHandler() const override;
 
 private:
     StaticResponder responder_;
@@ -44,7 +44,7 @@ public:
     FactoryRoute(const std::string& path, std::unique_ptr<RequestHandlerFactory>&& factory);
     FactoryRoute(const std::string& path, const RequestHandlerFactory& factory);
 
-    std::unique_ptr<RequestHandler> getHandler(Request&&) const override;
+    std::unique_ptr<RequestHandler> getHandler() const override;
 
 private:
     std::unique_ptr<RequestHandlerFactory> factory_;

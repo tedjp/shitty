@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "Route.h"
+#include "Routes.h"
 
 namespace shitty {
 
@@ -13,9 +13,19 @@ public:
     ~Server();
 
     template <typename... Args>
-    Server& addHandler(std::string&& path, Args... args) {
-        routes_.emplace_back(std::move(path), std::move(args)...);
+    Server& addStaticHandler(const std::string& path, Args... args) {
+        routes_.addRoute(std::make_unique<StaticRoute>(path, StaticResponder(std::move(args)...)));
         return *this;
+    }
+
+    template <typename HandlerT, typename... Args>
+    Server& addHandler(const std::string& path, Args... args) {
+        routes_.addRoute(std::make_unique<FactoryRoute>(path, AutoRequestHandlerFactory<HandlerT>(std::move(args)...)));
+        return *this;
+    }
+
+    void addRoute(std::unique_ptr<Route>&& route) {
+        routes_.addRoute(std::move(route));
     }
 
     void run();
@@ -23,7 +33,7 @@ public:
     int epollFD();
 
 private:
-    std::vector<Route> routes_;
+    Routes routes_;
 
     class Impl;
     std::unique_ptr<Impl> impl_;

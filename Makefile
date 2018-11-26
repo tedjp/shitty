@@ -23,8 +23,9 @@ OBJS = \
 	   ProxyHandler.o \
 	   Request.o \
 	   RequestHandler.o \
-	   RequestRouter.o \
 	   Response.o \
+	   Route.o \
+	   Routes.o \
 	   Server.o \
 	   StaticResponder.o \
 	   StatusStrings.o \

@@ -6,9 +6,9 @@ using shitty::Response;
 
 ServerTransport::ServerTransport(
         Connection* connection,
-        RequestRouter* request_router):
+        Routes* routes):
     shitty::http1::Transport(connection),
-    request_router_(std::move(request_router))
+    routes_(std::move(routes))
 {
 }
 
@@ -22,7 +22,7 @@ void ServerTransport::handleIncomingMessage(IncomingMessage&& msg) {
 }
 
 void ServerTransport::onRequest(Request&& req) {
-    request_handler_ = request_router_->getHandler(req);
+    request_handler_ = routes_->getHandler(req);
     // FIXME: Could be nullptr!
     request_handler_->onRequest(std::move(req), this);
 }

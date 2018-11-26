@@ -12,7 +12,6 @@ public:
     virtual std::unique_ptr<RequestHandler> getHandler() const = 0;
 };
 
-#if 0
 template <typename HandlerT, typename... HandlerArgs>
 class AutoRequestHandlerFactory: public RequestHandlerFactory {
 public:
@@ -27,6 +26,5 @@ public:
 private:
     std::tuple<HandlerArgs...> handler_args_;
 };
-#endif
 
 }

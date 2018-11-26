@@ -4,7 +4,6 @@
 
 #include "../Connection.h"
 #include "../Request.h"
-#include "../RequestRouter.h"
 #include "../StreamBuf.h"
 #include "../Transport.h"
 #include "IncomingMessage.h"

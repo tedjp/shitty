@@ -12,7 +12,6 @@
 #include "ConnectionManager.h"
 #include "Error.h"
 #include "EventReceiver.h"
-#include "RequestRouter.h"
 #include "Server.h"
 #include "http1/ServerTransport.h"
 
@@ -51,8 +50,6 @@ private:
 
     int listenfd_ = -1;
 
-    RequestRouter request_router_;
-
     // XXX: Due to the way EventReceivers can't be moved (or the event pointer
     // dangles), they have to be held by unique_ptr.
     std::unordered_map<int, std::unique_ptr<Connection>> clients_;
@@ -90,7 +87,6 @@ Server::Impl::~Impl() {
 }
 
 void Server::Impl::run() {
-    request_router_ = RequestRouter(&server_->routes_);
     setup();
     loop();
 }
@@ -213,7 +209,7 @@ bool Server::Impl::accept() {
     connection->setConnectionManager(this);
     connection->setTransport(std::make_unique<http1::ServerTransport>(
                 connection.get(),
-                &request_router_));
+                &server_->routes_));
 
     auto [iter, inserted] = clients_.try_emplace(client_fd, std::move(connection));
 

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Transport.h"
+#include "../Routes.h"
+#include "../ServerTransport.h"
 
 namespace shitty::http1 {
 
@@ -10,7 +12,7 @@ class ServerTransport:
 public:
     ServerTransport(
             Connection* connection,
-            RequestRouter* request_router);
+            Routes* routes);
 
     // from shitty::ServerTransport
     void onRequest(Request&&) override;
@@ -21,7 +23,7 @@ protected:
     void handleIncomingMessage(IncomingMessage&&) override;
 
 private:
-    RequestRouter* request_router_;
+    Routes* routes_;
     std::unique_ptr<RequestHandler> request_handler_;
 };
 

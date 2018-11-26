@@ -5,6 +5,7 @@
 - Replace epollFD() calls in proxy w/ Events type.
   And possibly a default thread-local instance.
 - HTTP2Transport
+- Multiprocess/multithread.
 - Separate Transport from Stream;
   Transport implements protocol/mux, Stream is {client,server} interface.
   ClientTransportSource should be a StreamSource that internally uses a

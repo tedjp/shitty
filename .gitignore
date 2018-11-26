@@ -1,8 +1,3 @@
 *.o
-
-/counting
-/per-request
 /proxy
-/shitty
-/wtfd2
 /hello-world

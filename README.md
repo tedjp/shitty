@@ -6,15 +6,6 @@
 
 A simple example of serving static responses.
 
-### [CountingServer](CountingServer.cpp)
-
-A server that maintains some state, responding to each request with the number
-of requests served so far.
-
-### [PerRequestServer](PerRequestServer.cpp)
-
-An example of a server that creates a new handler instance for each request.
-
 ### [ProxyServer](ProxyServer.cpp)
 
 A simple HTTP proxy.

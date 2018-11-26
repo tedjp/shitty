@@ -8,11 +8,6 @@ int main() {
     Server server;
     ClientTransportSource client_source(server.epollFD());
 
-    server.addStaticHandler<std::initializer_list<std::string>, std::string>(
-            std::string("/version"),
-            {std::string("Content-type: text/plain")},
-            std::string("Version 1.0"));
-
     server.addHandler("/", std::make_unique<ProxyHandlerFactory>(&client_source));
     server.run();
 }

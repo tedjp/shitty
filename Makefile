@@ -1,4 +1,4 @@
-all: hello-world counting per-request proxy
+all: hello-world proxy
 
 CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
 #CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O0 -march=native
@@ -37,16 +37,10 @@ OBJS = \
 hello-world: HelloWorld.cpp $(OBJS)
 	$(CXX) -I.. -o  $@ $^
 
-counting: CountingServer.cpp $(OBJS)
-	$(CXX) -I.. -o $@ $^
-
-per-request: PerRequestServer.cpp $(OBJS)
-	$(CXX) -I.. -o $@ $^
-
 proxy: ProxyServer.cpp $(OBJS)
 	$(CXX) -I.. -o $@ $^
 
 clean:
-	rm -f *.o http1/*.o hello-world counting per-request proxy
+	rm -f *.o http1/*.o hello-world proxy
 
 check:

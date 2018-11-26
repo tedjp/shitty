@@ -26,3 +26,13 @@ std::unique_ptr<RequestHandler>
 StaticRoute::getHandler() const {
     return factory_->getHandler();
 }
+
+FactoryRoute::FactoryRoute(const std::string& path, std::unique_ptr<RequestHandlerFactory>&& factory):
+    Route(path),
+    factory_(std::move(factory))
+{}
+
+std::unique_ptr<RequestHandler>
+FactoryRoute::getHandler() const {
+    return factory_->getHandler();
+}

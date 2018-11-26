@@ -42,7 +42,6 @@ private:
 class FactoryRoute: public Route {
 public:
     FactoryRoute(const std::string& path, std::unique_ptr<RequestHandlerFactory>&& factory);
-    FactoryRoute(const std::string& path, const RequestHandlerFactory& factory);
 
     std::unique_ptr<RequestHandler> getHandler() const override;
 

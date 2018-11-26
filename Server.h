@@ -18,9 +18,9 @@ public:
         return *this;
     }
 
-    template <typename HandlerT, typename... Args>
+    template <typename... Args>
     Server& addHandler(const std::string& path, Args... args) {
-        routes_.addRoute(std::make_unique<FactoryRoute>(path, AutoRequestHandlerFactory<HandlerT>(std::move(args)...)));
+        routes_.addRoute(std::make_unique<FactoryRoute>(path, std::move(args)...));
         return *this;
     }
 

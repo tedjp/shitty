@@ -34,18 +34,8 @@ private:
     ClientTransport* backend_transport_;
 };
 
-class ProxyHandlerFactory: public RequestHandlerFactory {
-public:
-    ProxyHandlerFactory(ClientTransportSource* client_transport_source):
-        client_transport_source_(client_transport_source)
-    {}
-
-    std::unique_ptr<RequestHandler> getHandler() const override {
-        return std::make_unique<ProxyHandler>(client_transport_source_);
-    }
-
-private:
-    ClientTransportSource* client_transport_source_;
-};
+using ProxyHandlerFactory = SimpleRequestHandlerFactory<
+    ProxyHandler,
+    ClientTransportSource*>;
 
 }

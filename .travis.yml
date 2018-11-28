@@ -1,4 +1,19 @@
 language: cpp
+
 dist: xenial
-sudo: false
+
+# Ubuntu 16.04 (xenial)'s GCC 5 doesn't support C++17, so pull in a newer
+# compiler.
+addons:
+  apt:
+    sources:
+    - sourceline: 'ppa:ubuntu-toolchain-r/test'
+    packages:
+    - g++-8
+
+# shitty build system doesn't allow the compiler to be specified
+sudo: true
+before_install:
+  sudo sh -c '(cd /usr/local/bin && ln -sf ../../bin/g++-8 g++)'
+
 script: set -e; for dir in hpack/huffy hpack .; do (cd $dir && make -j && make check); done

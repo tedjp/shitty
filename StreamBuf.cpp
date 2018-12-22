@@ -28,7 +28,7 @@ void StreamBuf::grow() {
     if (size() < 4096 / GROWTH_FACTOR) {
         newcap = 4096;
     } else if (size() > capacity() / 2) {
-        if (std::numeric_limits<size_t>::max() / GROWTH_FACTOR > capacity())
+        if (capacity() > std::numeric_limits<size_t>::max() / GROWTH_FACTOR)
             newcap = std::numeric_limits<size_t>::max();
         else
             newcap = capacity() * GROWTH_FACTOR;

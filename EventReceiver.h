@@ -13,7 +13,6 @@ public:
     EventReceiver& operator=(EventReceiver&&) = delete;
     virtual ~EventReceiver();
 
-    // TODO: Make noncopyable non-dleteabed.
     virtual void onPollIn();
     virtual void onPollOut();
     virtual void onPollErr();

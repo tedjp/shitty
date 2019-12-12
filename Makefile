@@ -27,6 +27,8 @@ OBJS = \
 	   Route.o \
 	   Routes.o \
 	   Server.o \
+	   SignalReceiver.o \
+	   SignalSource.o \
 	   StaticResponder.o \
 	   StatusStrings.o \
 	   StreamBuf.o \

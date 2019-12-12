@@ -13,6 +13,7 @@
 #include "Error.h"
 #include "EventReceiver.h"
 #include "Server.h"
+#include "SignalReceiver.h"
 #include "http1/ServerTransport.h"
 
 namespace shitty {
@@ -36,6 +37,7 @@ public:
 
 private:
     void setup();
+    void addEventReceiver(int fd, EventReceiver *receiver);
     void loop();
     void dispatch(struct epoll_event *event);
     bool accept();
@@ -55,6 +57,9 @@ private:
     std::unordered_map<int, std::unique_ptr<Connection>> clients_;
 
     std::queue<int> remove_clients_;
+
+    bool keep_running_ = true;
+    SignalReceiver signal_receiver_;
 };
 
 Server::Server():
@@ -73,11 +78,14 @@ Server::~Server() {
 }
 
 Server::Impl::Impl(Server *server):
-    server_(server)
+    server_(server),
+    signal_receiver_(SIGINT, [&flag = keep_running_](int signum) { flag = false; })
 {
     epfd_ = epoll_create1(EPOLL_CLOEXEC);
     if (epfd_ == -1)
         throw error_errno("epoll_create1 failed");
+
+    addEventReceiver(signal_receiver_.getPollFD(), &signal_receiver_);
 }
 
 Server::Impl::~Impl() {
@@ -120,33 +128,43 @@ void Server::Impl::setup() {
     if (::listen(listenfd_, 100) == -1)
         throw error_errno("listen");
 
+    addEventReceiver(listenfd_, this);
+}
+
+void Server::Impl::addEventReceiver(int fd, EventReceiver* receiver) {
     struct epoll_event ev = {
         .events = EPOLLIN | EPOLLET,
         .data = {
-            .ptr = dynamic_cast<EventReceiver*>(this),
+            .ptr = receiver,
         },
     };
 
-    if (epoll_ctl(epfd_, EPOLL_CTL_ADD, listenfd_, &ev) == -1)
-       throw error_errno("EPOLL_CTL_ADD");
+    if (epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ev) == -1)
+        throw error_errno("EPOLL_CTL_ADD");
 }
 
 void Server::Impl::loop() {
     struct epoll_event events[10];
     int count;
 
-    while ((count = epoll_wait(epfd_, events, sizeof(events) / sizeof(events[0]), -1)) != -1 || errno == EINTR) {
+    while (keep_running_
+            && (
+                (count = epoll_wait(epfd_, events, sizeof(events) / sizeof(events[0]), -1)) != -1
+                || errno == EINTR))
+    {
         for (int i = 0; i < count; ++i)
             dispatch(&events[i]);
 
         remove_dead_clients();
     }
 
-    int epoll_errno = errno;
+    // distinguish clean shutdown by epoll_errno
+    int epoll_errno = keep_running_ ? errno : 0;
     cleanup();
     errno = epoll_errno;
 
-    throw error_errno("epoll_wait");
+    if (errno != 0)
+        throw error_errno("epoll_wait");
 }
 
 void Server::Impl::remove_dead_clients() {

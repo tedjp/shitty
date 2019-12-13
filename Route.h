@@ -27,14 +27,12 @@ class StaticRouteHandlerFactory;
 
 class StaticRoute: public Route {
 public:
-    StaticRoute(const std::string& path, const StaticResponder& responder);
-    // For non-copyable static responder
-    StaticRoute(std::string&& path, StaticResponder&& responder);
+    StaticRoute(const std::string& path, std::unique_ptr<StaticResponder>&& responder);
 
     std::unique_ptr<RequestHandler> getHandler() const override;
 
 private:
-    StaticResponder responder_;
+    std::unique_ptr<StaticResponder> responder_;
 
     std::unique_ptr<detail::StaticRouteHandlerFactory> factory_;
 };

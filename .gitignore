@@ -1,3 +1,4 @@
 *.o
-/proxy
 /hello-world
+/print-requests
+/proxy

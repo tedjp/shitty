@@ -1,4 +1,8 @@
-all: hello-world proxy
+all: \
+	hello-world \
+	print-requests \
+	proxy \
+	#
 
 CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
 #CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O0 -march=native
@@ -42,7 +46,14 @@ hello-world: HelloWorld.cpp $(OBJS)
 proxy: ProxyServer.cpp $(OBJS)
 	$(CXX) -I.. -o $@ $^
 
+print-requests: PrintRequestServer.cpp $(OBJS)
+	$(CXX) -o $@ $^
+
 clean:
-	rm -f *.o http1/*.o hello-world proxy
+	rm -f *.o http1/*.o \
+		hello-world \
+		print-requests \
+		proxy \
+		#
 
 check:

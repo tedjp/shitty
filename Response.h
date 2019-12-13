@@ -6,7 +6,8 @@ namespace shitty {
 
 class Response {
 public:
-    explicit Response(std::string&& body);
+    // Constructors allow implicit conversions on purpose
+    Response(std::string&& body);
     Response(std::initializer_list<std::string> headers, std::string&& body);
     Response(std::initializer_list<Header> headers, std::string&& body);
     Response(unsigned status_code = 200, std::string&& body = std::string());

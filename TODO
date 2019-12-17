@@ -1,4 +1,3 @@
-- Handle "Expect: 100-continue" properly (for uploads)
 - Handle backend connection/request failure!
 - Catch exception in handler without killing server.
 - Prevent pipelining (or ensure it's handled safely; eg. a queue) rather than

@@ -60,3 +60,23 @@ shitty::split(std::string&& src, std::string::size_type pos) {
     src.resize(pos);
     return {std::move(src), std::move(second)};
 }
+
+bool shitty::ascii::CaseInsensitiveEqual::operator()(
+        const std::string& left,
+        const std::string& right) const
+{
+    return std::equal(
+            left.cbegin(),
+            left.cend(),
+            right.cbegin(),
+            right.cend(),
+            [](char l, char r) -> bool {
+                return ::tolower(l) == ::tolower(r);
+            });
+}
+
+size_t shitty::ascii::CaseInsensitiveHash::operator()(const std::string& s) const {
+    std::string lower(s);
+    asciiLower(lower);
+    return std::hash<std::string>()(lower);
+}

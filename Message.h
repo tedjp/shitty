@@ -18,7 +18,6 @@ public:
     Message(std::string&& body, std::initializer_list<Header> headers);
     Message(std::initializer_list<std::string> headers, std::string&& body);
     Message(std::initializer_list<Header> headers, std::string&& body);
-    Message(const std::string& body, const std::pair<std::string, std::string> header...);
     Message(const std::string& body, const Headers& headers);
     ~Message();
 

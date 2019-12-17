@@ -6,7 +6,10 @@
 #include "StringUtils.h"
 
 using std::string;
-using shitty::Headers;
+
+namespace shitty {
+
+const Header no_header;
 
 Headers::Headers(std::initializer_list<std::string> headers) {
     for (auto& hstr: headers) {
@@ -19,7 +22,6 @@ Headers::Headers(std::initializer_list<std::string> headers) {
         name.resize(col);
 
         trimLWS(name);
-        asciiLower(name);
         trimLWS(value);
 
         kv_.emplace(std::move(name), std::move(value));
@@ -27,23 +29,31 @@ Headers::Headers(std::initializer_list<std::string> headers) {
 }
 
 void Headers::set(const string& name, const string& value) {
-    // TODO: case-fold here.
     kv_.erase(name);
     kv_.emplace(name, value);
 }
 
 void Headers::add(const string& name, const string& value) {
-    // TODO: case-fold here.
     kv_.emplace(name, value);
+}
+
+const Header& Headers::get(const std::string& name) const {
+    auto it = kv_.find(name);
+    if (it != kv_.end())
+        return *it;
+
+    return no_header;
 }
 
 // These functions access the kv_ property directly because it avoids
 // case-folding that will at some point be implemented in the set() and add()
 // functions.
 
-void shitty::setContentLength(Headers& headers, size_t content_length) {
+void setContentLength(Headers& headers, size_t content_length) {
     if (headers.kv_.find("content-length") != headers.kv_.end())
         return; // Trust the caller, it's faster ;)
 
     headers.kv_.emplace("content-length", std::to_string(content_length));
 }
+
+} // namespace shitty

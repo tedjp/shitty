@@ -4,8 +4,8 @@ all: \
 	proxy \
 	#
 
-CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
-#CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O0 -march=native
+#CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
+CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -Og -march=native
 COMPILE_OBJ = $(CXX) -c
 
 %.o: %.cpp %.h

@@ -52,7 +52,7 @@ bool Transport::processInput(StreamBuf& input_buffer) {
     }
 
     if (line.empty()) {
-        onEndOfMessageHeaders();
+        markHeadersComplete();
         return !isMessageComplete();
     }
 
@@ -101,10 +101,14 @@ bool Transport::isMessageComplete() {
         && static_cast<ssize_t>(incoming_message_->message.body().size()) == expected_body_length_;
 }
 
-void Transport::onEndOfMessageHeaders() {
+void Transport::markHeadersComplete() {
     message_headers_complete_ = true;
 
-    expected_body_length_ = getContentLength(incoming_message_->message.headers());
+    Headers& headers = incoming_message_->message.headers();
+
+    expected_body_length_ = getContentLength(headers);
+
+    onEndOfMessageHeaders(headers);
 
     if (isMessageComplete()) {
         handleMessage();
@@ -180,7 +184,6 @@ void Transport::sendMessage(
     // Combine header & body if there's room.
     if (message.body().size() < payload.tailroom()) {
         payload.send(message.body());
-        // XXX: This API is grubby
         connection_->send(reinterpret_cast<const char*>(payload.data()), payload.size());
     } else {
         payload.flush();

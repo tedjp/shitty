@@ -26,3 +26,25 @@ void ServerTransport::onRequest(Request&& req) {
     // FIXME: Could be nullptr!
     request_handler_->onRequest(std::move(req), this);
 }
+
+void ServerTransport::onEndOfMessageHeaders(Headers& headers) {
+    const Header& expectHeader = headers.get("expect");
+    if (expectHeader != no_header) {
+        handleExpect(expectHeader.second);
+        return;
+    }
+}
+
+// This SHALL be overridden by proxies, which, for HTTP/1.1 and later clients,
+// are required to forward the request to the origin.
+void ServerTransport::handleExpect(const std::string& value) {
+    // TODO: If client is HTTP/1.0 or earlier, MUST ignore the Expect header.
+
+    if (value != "100-continue") {
+        Response response(417, "Expectation Failed.\n");
+        sendMessage(statusLine(response), response.message);
+        return;
+    }
+
+    sendResponse(Response(100, Message()));
+}

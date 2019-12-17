@@ -19,6 +19,7 @@ public:
 protected:
     virtual void handleIncomingMessage(IncomingMessage&&) = 0;
     virtual void sendMessage(const std::string& first_line, const Message& message);
+    virtual void onEndOfMessageHeaders(Headers& headers) {}
 
 private:
     static IncomingMessage
@@ -29,7 +30,7 @@ private:
     // continuation lines would need dynamic allocations. Then create a superset
     // string_or_view class that seamlessly owns & wraps either one.
     bool isMessageComplete();
-    void onEndOfMessageHeaders();
+    void markHeadersComplete();
     void onEndOfMessage();
     void headerContinuation(std::string&& line);
     void headerLine(std::string&& line);

@@ -30,5 +30,10 @@ Message::Message(std::initializer_list<Header> headers, std::string&& body):
     headers_(std::move(headers))
 {}
 
+Message::Message(const std::string& body, const Headers& headers):
+    body_(body),
+    headers_(headers)
+{}
+
 Message::~Message()
 {}

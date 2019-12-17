@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HTTP1.h"
 #include "Transport.h"
 #include "../Routes.h"
 #include "../ServerTransport.h"
@@ -21,8 +22,11 @@ public:
 protected:
     // from shitty::http1::Transport
     void handleIncomingMessage(IncomingMessage&&) override;
+    void onEndOfMessageHeaders(Headers& headers) override;
 
 private:
+    virtual void handleExpect(const std::string& value);
+
     Routes* routes_;
     std::unique_ptr<RequestHandler> request_handler_;
 };

@@ -6,13 +6,13 @@
 
 A simple example of serving static responses.
 
-### [PrintRequestServer](PrintRequestServer.cpp)
-
-Prints incoming requests.
-
 ### [ProxyServer](ProxyServer.cpp)
 
 A simple HTTP proxy.
+
+### [PrintRequestServer](PrintRequestServer.cpp)
+
+Prints incoming requests.
 
 ## Usage
 

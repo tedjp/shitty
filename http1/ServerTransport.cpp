@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "HTTP1.h"
 #include "ServerTransport.h"
 
@@ -23,7 +25,9 @@ void ServerTransport::handleIncomingMessage(IncomingMessage&& msg) {
 
 void ServerTransport::onRequest(Request&& req) {
     request_handler_ = routes_->getHandler(req);
-    // FIXME: Could be nullptr!
+
+    assert(request_handler_ != nullptr);
+
     request_handler_->onRequest(std::move(req), this);
 }
 

@@ -24,13 +24,13 @@ public:
 
     template <typename... Args>
     Server& addStaticHandler(const std::string& path, Args... args) {
-        routes_.addRoute(std::make_unique<StaticRoute>(path, std::make_unique<StaticResponder>(std::move(args)...)));
+        routes_.addRoute(std::make_unique<StaticRoute>(path, std::make_unique<StaticResponder>(std::forward<Args>(args)...)));
         return *this;
     }
 
     template <typename... Args>
     Server& addHandler(const std::string& path, Args... args) {
-        routes_.addRoute(std::make_unique<FactoryRoute>(path, std::move(args)...));
+        routes_.addRoute(std::make_unique<FactoryRoute>(path, std::forward<Args>(args)...));
         return *this;
     }
 

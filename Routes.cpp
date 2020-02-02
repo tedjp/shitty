@@ -12,5 +12,7 @@ Routes::getHandler(const Request& request) const
         }
     }
 
-    return {};
+    return std::make_unique<StaticResponder>(
+            404,
+            "No handler for this path.\n");
 }

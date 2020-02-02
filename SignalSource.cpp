@@ -1,3 +1,6 @@
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <signal.h>
 #include <unistd.h>
 
@@ -10,7 +13,12 @@ using namespace shitty;
 static int write_fd = -1;
 
 static void handle(int sig) {
-    write(write_fd, &sig, sizeof(sig));
+    ssize_t len = write(write_fd, &sig, sizeof(sig));
+
+    if (len != sizeof(sig)) {
+        fprintf(stderr, "Failed to write signal %d: %s\n", sig, strerror(errno));
+        abort();
+    }
 }
 
 static void set_fd(int fd) {

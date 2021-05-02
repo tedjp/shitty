@@ -5,6 +5,7 @@
 
 namespace shitty {
 
+// Responds to a request with the same response every time.
 class StaticResponder: public RequestHandler {
 public:
     // Allow construction using all Response c'tors

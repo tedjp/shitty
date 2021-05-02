@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 #include "../ClientTransport.h"
 #include "Transport.h"
 

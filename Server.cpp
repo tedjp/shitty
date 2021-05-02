@@ -159,12 +159,11 @@ void Server::Impl::loop() {
     }
 
     // distinguish clean shutdown by epoll_errno
-    int epoll_errno = keep_running_ ? errno : 0;
+    const int epoll_errno = keep_running_ ? errno : 0;
     cleanup();
-    errno = epoll_errno;
 
-    if (errno != 0)
-        throw error_errno("epoll_wait");
+    if (epoll_errno != 0)
+        throw error_errno("epoll_wait", epoll_errno);
 }
 
 void Server::Impl::remove_dead_clients() {

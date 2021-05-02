@@ -16,8 +16,9 @@ public:
         kv_(headers)
     {}
     Headers(std::initializer_list<std::string> headers);
-    void set(const std::string &name, const std::string& value);
-    void add(const std::string &name, const std::string& value);
+    void set(const std::string& name, const std::string& value);
+    void add(const std::string& name, const std::string& value);
+    void remove(const std::string& name);
 
     const Header& get(const std::string& name) const;
 

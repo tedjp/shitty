@@ -5,7 +5,7 @@ all: \
 	#
 
 #CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
-CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -Og -march=native
+CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=1 -Og -march=native
 COMPILE_OBJ = $(CXX) -c
 
 %.o: %.cpp %.h
@@ -22,7 +22,9 @@ OBJS = \
 	   http1/ClientTransport.o \
 	   http1/HTTP1.o \
 	   http1/ServerTransport.o \
+	   http1/TestHTTP1Upgrader.o \
 	   http1/Transport.o \
+	   http1/UpgradeRegistry.o \
 	   Message.o \
 	   ProxyHandler.o \
 	   Request.o \

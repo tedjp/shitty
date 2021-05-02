@@ -16,6 +16,8 @@ public:
 
     void onInput(StreamBuf& input_buffer) override;
 
+    Connection* getConnection();
+
 protected:
     virtual void handleIncomingMessage(IncomingMessage&&) = 0;
     virtual void sendMessage(const std::string& first_line, const Message& message);
@@ -51,5 +53,9 @@ private:
 
     Connection* connection_;
 };
+
+inline Connection* Transport::getConnection() {
+    return connection_;
+}
 
 }

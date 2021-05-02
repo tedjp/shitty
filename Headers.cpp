@@ -37,6 +37,10 @@ void Headers::add(const string& name, const string& value) {
     kv_.emplace(name, value);
 }
 
+void Headers::remove(const string& name) {
+    kv_.erase(name);
+}
+
 const Header& Headers::get(const std::string& name) const {
     auto it = kv_.find(name);
     if (it != kv_.end())

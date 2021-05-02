@@ -13,7 +13,7 @@ class ServerTransport:
 public:
     ServerTransport(
             Connection* connection,
-            Routes* routes);
+            const Routes* routes);
 
     // from shitty::ServerTransport
     void onRequest(Request&&) override;
@@ -25,9 +25,15 @@ protected:
     void onEndOfMessageHeaders(Headers& headers) override;
 
 private:
+    bool tryUpgrade(Request& request);
+    void upgrade(
+            const std::string& token,
+            std::unique_ptr<shitty::Transport>&& newTransport,
+            Request&& request);
+
     virtual void handleExpect(const std::string& value);
 
-    Routes* routes_;
+    const Routes* routes_;
     std::unique_ptr<RequestHandler> request_handler_;
 };
 

@@ -36,7 +36,9 @@ public:
     void onPollOut() override;
 
     void setTransport(std::unique_ptr<Transport>&&);
-    inline Transport* getTransport();
+    void upgradeTransport(std::unique_ptr<Transport>&&, Request&& initialRequest);
+    Transport* getTransport();
+
     void setConnectionManager(ConnectionManager *manager);
 
     // Send a buffer.

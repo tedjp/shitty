@@ -43,6 +43,8 @@ public:
     int epollFD();
 
 private:
+    // Config
+    // TODO: Move all config into a separate class.
     Routes routes_;
 
     class Impl;

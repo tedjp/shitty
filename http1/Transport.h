@@ -10,10 +10,11 @@
 
 namespace shitty::http1 {
 
-class Transport: virtual public shitty::Transport {
+class Transport: public shitty::Transport {
 public:
     Transport(Connection* connection);
 
+    // shitty::Transport overrides
     void onInput(StreamBuf& input_buffer) override;
 
     Connection* getConnection();

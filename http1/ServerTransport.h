@@ -3,19 +3,19 @@
 #include "HTTP1.h"
 #include "Transport.h"
 #include "../Routes.h"
-#include "../ServerTransport.h"
+#include "../ServerStream.h"
 
 namespace shitty::http1 {
 
 class ServerTransport:
-    virtual public shitty::ServerTransport,
-    virtual public shitty::http1::Transport {
+    public shitty::ServerStream,
+    public shitty::http1::Transport {
 public:
     ServerTransport(
             Connection* connection,
             const Routes* routes);
 
-    // from shitty::ServerTransport
+    // from shitty::ServerStream
     void onRequest(Request&&) override;
     void sendResponse(const Response&) override;
 

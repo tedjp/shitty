@@ -14,8 +14,8 @@ public:
         static_responder_(static_responder)
     {}
 
-    void onRequest(Request&& request, ServerTransport *transport) override {
-        static_responder_->onRequest(std::move(request), transport);
+    void onRequest(Request&& request, ServerStream *stream) override {
+        static_responder_->onRequest(std::move(request), stream);
     }
 
 private:

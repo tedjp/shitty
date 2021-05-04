@@ -7,6 +7,7 @@
 #include "../Payload.h"
 #include "../Request.h"
 #include "../StatusStrings.h"
+#include "../Stream.h"
 #include "../StringUtils.h"
 
 using namespace shitty::http1;
@@ -176,7 +177,7 @@ void Transport::sendMessage(
     payload.send("\r\n", 2);
 
     Headers outgoingHeaders(message.headers());
-    setGeneralHeaders(outgoingHeaders);
+    Stream::setGeneralServerHeaders(outgoingHeaders);
     setContentLength(outgoingHeaders, message.body().size());
 
     payload.send(renderHeaders(outgoingHeaders));

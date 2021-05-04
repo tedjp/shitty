@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../ClientTransport.h"
+#include "../ClientStream.h"
 #include "Transport.h"
 
 namespace shitty::http1 {
 
 class ClientTransport:
-    virtual public shitty::ClientTransport,
-    virtual public shitty::http1::Transport {
+    public shitty::ClientStream,
+    public shitty::http1::Transport {
 public:
     ClientTransport(Connection* connection, resp_handler_t&& handler = resp_handler_t());
 

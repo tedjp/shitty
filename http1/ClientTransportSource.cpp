@@ -3,12 +3,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "Error.h"
-#include "http1/ClientTransport.h"
+#include "../Error.h"
+#include "ClientTransport.h"
 #include "ClientTransportSource.h"
 
-using shitty::ClientTransport;
-using shitty::ClientTransportSource;
+using namespace shitty::http1;
 
 ClientTransport*
 ClientTransportSource::getTransport(ClientTransport::resp_handler_t&& resp_handler) {

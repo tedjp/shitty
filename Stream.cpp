@@ -1,12 +1,7 @@
 #include "Date.h"
-#include "Headers.h"
-#include "ClientTransport.h"
-#include "ServerTransport.h"
+#include "Stream.h"
 
 using namespace shitty;
-
-Transport::~Transport()
-{}
 
 static const std::string PRODUCT("Shitty");
 
@@ -27,18 +22,14 @@ static void setServerHeader(Headers& headers) {
     headers.kv_.emplace("server", PRODUCT);
 }
 
-void ServerTransport::setGeneralHeaders(Headers& headers) {
+void Stream::setGeneralServerHeaders(Headers& headers) {
     setDateHeader(headers);
     setServerHeader(headers);
 }
 
-static void setUserAgentHeader(Headers& headers) {
+void Stream::setUserAgentHeader(Headers& headers) {
     if (headers.kv_.find("user-agent") != headers.kv_.end())
         return;
 
     headers.kv_.emplace("user-agent", PRODUCT);
-}
-
-void ClientTransport::setGeneralHeaders(Headers& headers) {
-    setUserAgentHeader(headers);
 }

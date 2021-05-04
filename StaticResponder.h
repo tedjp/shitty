@@ -16,7 +16,7 @@ public:
         addStandardHeaders();
     }
 
-    void onRequest(Request&& req, ServerTransport *transport) override;
+    void onRequest(Request&& req, ServerStream *stream) override;
 
 protected:
     void addStandardHeaders();

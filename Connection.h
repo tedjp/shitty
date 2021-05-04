@@ -10,6 +10,8 @@
 
 namespace shitty {
 
+class Request;
+
 class Connection: public EventReceiver {
 public:
     // TODO: Make these static constructors for better naming, or inherit as

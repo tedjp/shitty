@@ -4,10 +4,10 @@
 #include <stack>
 #include <unordered_map>
 
+#include "../Connection.h"
 #include "ClientTransport.h"
-#include "Connection.h"
 
-namespace shitty {
+namespace shitty::http1 {
 
 struct SchemeAndAuthority {
     std::string scheme, authority;

@@ -11,7 +11,7 @@ public:
         StaticResponder(200, Message())
     {}
 
-    void onRequest(Request&& request, ServerTransport *transport) override {
+    void onRequest(Request&& request, ServerStream *stream) override {
         using std::cout;
 
         cout << request.method() << ' ' << request.path() << '\n';
@@ -26,7 +26,7 @@ public:
 
         cout.flush();
 
-        StaticResponder::onRequest(std::move(request), transport);
+        StaticResponder::onRequest(std::move(request), stream);
     }
 };
 

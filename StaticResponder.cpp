@@ -1,10 +1,10 @@
-#include "ServerTransport.h"
+#include "ServerStream.h"
 #include "StaticResponder.h"
 
 using shitty::StaticResponder;
 
-void StaticResponder::onRequest(Request&& req, ServerTransport *transport) {
-    transport->sendResponse(response_);
+void StaticResponder::onRequest(Request&& req, ServerStream *stream) {
+    stream->sendResponse(response_);
 }
 
 void StaticResponder::addStandardHeaders() {

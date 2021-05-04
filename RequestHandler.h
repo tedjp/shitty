@@ -4,7 +4,7 @@
 
 namespace shitty {
 
-class ServerTransport;
+class ServerStream;
 
 class RequestHandler {
 public:
@@ -15,7 +15,7 @@ public:
     RequestHandler& operator=(RequestHandler&&) = default;
     virtual ~RequestHandler();
 
-    virtual void onRequest(Request&& request, ServerTransport *transport) = 0;
+    virtual void onRequest(Request&& request, ServerStream *stream) = 0;
 };
 
 } // namespace

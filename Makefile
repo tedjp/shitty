@@ -12,7 +12,6 @@ COMPILE_OBJ = $(CXX) -c
 	$(COMPILE_OBJ) -o $@ $<
 
 OBJS = \
-	   ClientTransportSource.o \
 	   Connection.o \
 	   ConnectionManager.o \
 	   Date.o \
@@ -20,6 +19,7 @@ OBJS = \
 	   EventReceiver.o \
 	   Headers.o \
 	   http1/ClientTransport.o \
+	   http1/ClientTransportSource.o \
 	   http1/HTTP1.o \
 	   http1/ServerTransport.o \
 	   http1/TestHTTP1Upgrader.o \
@@ -33,12 +33,12 @@ OBJS = \
 	   Route.o \
 	   Routes.o \
 	   Server.o \
+	   Stream.o \
 	   SignalReceiver.o \
 	   SignalSource.o \
 	   StaticResponder.o \
 	   StatusStrings.o \
 	   StreamBuf.o \
-	   Transport.o \
 	   UnhandledRequestHandler.o \
 	   #
 

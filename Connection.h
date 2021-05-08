@@ -50,7 +50,7 @@ public:
     void send(const char *data, size_t len);
 
     // Read from the StreamBuf
-    ssize_t recv(void *buf, size_t buflen);
+    ptrdiff_t recv(void *buf, size_t buflen);
 
     void close();
 

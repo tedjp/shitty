@@ -9,6 +9,9 @@
 
 using shitty::Connection;
 
+// ssize_t is not actually part of C++. Standard authors suggest ptrdiff_t.
+using ssize_t = ptrdiff_t;
+
 Connection::Connection(
         int epfd,
         int fd):

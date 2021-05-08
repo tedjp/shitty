@@ -1,0 +1,34 @@
+#pragma once
+
+#include <memory>
+#include <string_view>
+
+#include "../Transport.h"
+
+namespace shitty {
+class Connection;
+class Routes;
+}
+
+namespace shitty::http2 {
+
+class ServerTransport: public shitty::Transport {
+public:
+    // Construct
+    // connection - connection
+    // settings - base64-encoded HTTP2-Settings header
+    // routes - routes
+    ServerTransport(
+            Connection* connection,
+            std::string_view settings,
+            const Routes* routes);
+
+    // shitty::Transport overrides
+    void onInput(StreamBuf&) override;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+} // namespace

@@ -25,6 +25,7 @@ OBJS = \
 	   http1/TestHTTP1Upgrader.o \
 	   http1/Transport.o \
 	   http1/UpgradeRegistry.o \
+	   http2/ServerTransport.o \
 	   Message.o \
 	   ProxyHandler.o \
 	   Request.o \

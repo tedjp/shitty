@@ -1,3 +1,4 @@
+- Remove `Routes*` from `ServerTransport`s.
 - Handle backend connection/request failure!
 - Catch exception in handler without killing server.
 - Prevent pipelining (or ensure it's handled safely; eg. a queue) rather than

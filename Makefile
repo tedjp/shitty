@@ -58,7 +58,10 @@ print-requests: PrintRequestServer.cpp $(OBJS)
 	$(CXX) -o $@ $^ $(LDLIBS)
 
 clean:
-	rm -f *.o http1/*.o \
+	rm -f \
+		*.o \
+		http1/*.o \
+		http2/*.o \
 		hello-world \
 		print-requests \
 		proxy \

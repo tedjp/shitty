@@ -5,7 +5,7 @@ all: \
 	#
 
 #CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
-CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=1 -Og -march=native
+CXX = g++ -std=c++20 -g -Wall -Werror -fmax-errors=1 -O0 -march=native
 COMPILE_OBJ = $(CXX) -c
 
 %.o: %.cpp %.h
@@ -44,14 +44,18 @@ OBJS = \
 	   UnhandledRequestHandler.o \
 	   #
 
+LDLIBS = \
+		 -lfb64 \
+		 #
+
 hello-world: HelloWorld.cpp $(OBJS)
-	$(CXX) -I.. -o  $@ $^
+	$(CXX) -I.. -o  $@ $^ $(LDLIBS)
 
 proxy: ProxyServer.cpp $(OBJS)
-	$(CXX) -I.. -o $@ $^
+	$(CXX) -I.. -o $@ $^ $(LDLIBS)
 
 print-requests: PrintRequestServer.cpp $(OBJS)
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 clean:
 	rm -f *.o http1/*.o \

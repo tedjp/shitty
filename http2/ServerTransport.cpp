@@ -1,5 +1,8 @@
 #include <unordered_map>
 
+#include <fb64.h> // https://github.com/tedjp/fb64
+
+#include "Settings.h"
 #include "ServerStream.h"
 #include "ServerTransport.h"
 
@@ -20,6 +23,7 @@ public:
 
 private:
     Connection* connection_;
+    Settings settings_;
     const Routes* routes_;
     // unique_ptr indirection here is so that ServerStream
     // pointers/references are not invalidated by other streams being created or
@@ -53,6 +57,23 @@ ServerTransport::Impl::Impl(
     connection_(connection),
     routes_(routes)
 {
+    // decode settings
+    {
+        char decoded[128];
+        const size_t decodedLen = fb64_decoded_size_nopad(settings.size());
+        if (decodedLen > sizeof(decoded))
+            throw runtime_error("excessive HTTP2-Settings length");
+
+        int decodeResult = fb64_decode(
+                settings.data(),
+                settings.size(),
+                reinterpret_cast<uint8_t*>(decoded));
+        if (decodeResult != 0)
+            throw runtime_error("HTTP2-Settings decode error");
+
+        settings_ = Settings::createFromBuffer(span(decoded, decodedLen));
+    }
+
     streams_.emplace(1, make_unique<ServerStream>());
 }
 

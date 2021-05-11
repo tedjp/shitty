@@ -14,7 +14,7 @@ class ServerTransport::Impl {
 public:
     Impl(
             Connection* connection,
-            string_view settings,
+            const Header& http2Settings,
             const Routes* routes);
 
     void onInput(StreamBuf& buf);
@@ -34,9 +34,9 @@ private:
 
 ServerTransport::ServerTransport(
         Connection* connection,
-        string_view settings,
+        const Header& http2Settings,
         const Routes* routes):
-    impl_(make_unique<Impl>(connection, settings, routes))
+    impl_(make_unique<Impl>(connection, http2Settings, routes))
 {}
 
 void ServerTransport::onInput(StreamBuf& buf) {
@@ -52,13 +52,14 @@ ServerTransport::~ServerTransport()
 
 ServerTransport::Impl::Impl(
         Connection* connection,
-        string_view settings,
+        const Header& http2Settings,
         const Routes* routes):
     connection_(connection),
     routes_(routes)
 {
     // decode settings
     {
+        string_view settings = http2Settings.second;
         char decoded[128];
         const size_t decodedLen = fb64_decoded_size_nopad(settings.size());
         if (decodedLen > sizeof(decoded))

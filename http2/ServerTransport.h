@@ -21,7 +21,7 @@ public:
     // routes - routes
     ServerTransport(
             Connection* connection,
-            std::string_view settings,
+            const Header& http2Settings,
             const Routes* routes);
     ~ServerTransport();
 

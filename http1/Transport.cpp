@@ -1,5 +1,6 @@
 #include <cstring>
 #include <limits>
+#include <stdexcept>
 
 // TODO: header cleanup
 #include "HTTP1.h"

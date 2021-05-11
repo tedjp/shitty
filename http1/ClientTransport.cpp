@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "ClientTransport.h"
 #include "HTTP1.h"
 

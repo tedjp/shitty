@@ -1,8 +1,9 @@
 #include <cassert>
 
+#include "../http2/ServerTransport.h" // for upgrades
 #include "HTTP1.h"
+#include "HTTP2Upgrader.h"
 #include "ServerTransport.h"
-#include "TestHTTP1Upgrader.h"
 #include "UpgradeRegistry.h"
 
 using namespace std;
@@ -18,6 +19,7 @@ struct Upgrades {
         // Uncomment to test Upgrade handling code path with a fake "h1c"
         // protocol that creates a new HTTP/1.1 transport.
         //registry.add("h1c", make_unique<TestHTTP1Upgrader>());
+        registry.add("h2c", make_unique<HTTP2Upgrader>());
     }
 };
 
@@ -71,6 +73,8 @@ void ServerTransport::upgrade(
         const string& token,
         unique_ptr<shitty::Transport>&& newTransport,
         Request&& request) {
+    assert(newTransport != nullptr);
+
     Response response(101); // Switching Protocols
     response.headers().add("Connection", "Upgrade");
     response.headers().set("Upgrade", token);
@@ -79,11 +83,13 @@ void ServerTransport::upgrade(
     Connection* connection = getConnection();
     connection->setTransport(move(newTransport));
     // `this` has been destroyed, but this stack frame still exists
-    ServerTransport* serverTransport = dynamic_cast<ServerTransport*>(
+    http2::ServerTransport* h2Transport = dynamic_cast<http2::ServerTransport*>(
             connection->getTransport());
-    assert(serverTransport != nullptr);
-    // Let the new transport handle the pre-upgrade request.
-    serverTransport->onRequest(move(request));
+    assert(h2Transport != nullptr);
+    // The upgraded incoming request becomes stream 1.
+    http2::ServerStream* stream = h2Transport->getStream(1);
+    assert(stream != nullptr);
+    stream->onRequest(move(request));
 }
 
 bool ServerTransport::tryUpgrade(Request& request) {
@@ -103,7 +109,7 @@ bool ServerTransport::tryUpgrade(Request& request) {
     if (!upgrader)
         return false;
 
-    unique_ptr<shitty::Transport> transport = upgrader->upgrade(this);
+    unique_ptr<shitty::Transport> transport = upgrader->upgrade(this, request);
 
     if (!transport)
         return false;

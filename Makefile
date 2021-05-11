@@ -21,10 +21,11 @@ OBJS = \
 	   http1/ClientTransport.o \
 	   http1/ClientTransportSource.o \
 	   http1/HTTP1.o \
+	   http1/HTTP2Upgrader.o \
 	   http1/ServerTransport.o \
-	   http1/TestHTTP1Upgrader.o \
 	   http1/Transport.o \
 	   http1/UpgradeRegistry.o \
+	   http2/ServerStream.o \
 	   http2/ServerTransport.o \
 	   Message.o \
 	   ProxyHandler.o \

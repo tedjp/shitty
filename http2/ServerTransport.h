@@ -4,6 +4,7 @@
 #include <string_view>
 
 #include "../Transport.h"
+#include "ServerStream.h"
 
 namespace shitty {
 class Connection;
@@ -22,9 +23,12 @@ public:
             Connection* connection,
             std::string_view settings,
             const Routes* routes);
+    ~ServerTransport();
 
     // shitty::Transport overrides
     void onInput(StreamBuf&) override;
+
+    ServerStream* getStream(uint32_t id);
 
 private:
     class Impl;

@@ -14,9 +14,18 @@ A simple HTTP proxy.
 
 Prints incoming requests.
 
+## Dependencies
+
+[**fb64**](https://github.com/tedjp/fb64) is required for HTTP/2 upgrade.
+
+Clone submodules to ensure it is available:
+
+    git submodule init
+    git submodule update
+
 ## Usage
 
-    make && sudo ./hello-world
+    make depend && make && sudo ./hello-world
 
 ## HPACK — HTTP/2 header compression
 

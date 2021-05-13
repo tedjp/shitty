@@ -1,12 +1,19 @@
+# This doesn't work with `make -j` because `make depend` needs to complete
+# before other things. makedepend(1) might help. For now, the recommendation
+# is to run `make depend` once before anything else.
 all: \
+	depend \
 	hello-world \
 	print-requests \
 	proxy \
 	#
 
-#CXX = g++ -std=gnu++17 -g -Wall -Werror -fmax-errors=5 -O3 -march=native
+depend:
+	$(MAKE) -C dependencies/fb64 -j
+
 CXX = g++ -std=c++20 -g -Wall -Werror -fmax-errors=1 -O0 -march=native
-COMPILE_OBJ = $(CXX) -c
+CPPFLAGS = -Idependencies/fb64
+COMPILE_OBJ = $(CXX) $(CPPFLAGS) -c
 
 %.o: %.cpp %.h
 	$(COMPILE_OBJ) -o $@ $<
@@ -45,7 +52,7 @@ OBJS = \
 	   #
 
 LDLIBS = \
-		 -lfb64 \
+		 -Ldependencies/fb64 -lfb64 \
 		 #
 
 hello-world: HelloWorld.cpp $(OBJS)
@@ -66,5 +73,9 @@ clean:
 		print-requests \
 		proxy \
 		#
+	$(MAKE) -C dependencies/fb64 clean
 
 check:
+	$(MAKE) -C dependencies/fb64 check
+
+.PHONY: all check clean depend

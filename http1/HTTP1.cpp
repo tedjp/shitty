@@ -82,16 +82,21 @@ requestLine(const Request& req) {
 }
 
 std::string
-statusLine(const Response& resp) {
+statusLine(uint_fast16_t statusCode) {
     // The majority of UTF-8 text is technically valid, except those that
     // contain \x00-x1f or \x7f, so for now I'm having some fun with the status
     // reason phrase (which is not carried in HTTP/2 at all).
     std::string status("HTTP/1.1 xxx \xf0\x9f\x98\x8e");
-    const char *str = status_strings[resp.statusCode()];
+    const char *str = status_strings[statusCode];
     status[ 9] = str[0];
     status[10] = str[1];
     status[11] = str[2];
     return status;
+}
+
+std::string
+statusLine(const Response& resp) {
+    return statusLine(resp.statusCode());
 }
 
 static void removeTrailingChar(std::string& s, char c) {

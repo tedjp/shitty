@@ -2,6 +2,7 @@
 
 #include <fb64.h> // https://github.com/tedjp/fb64
 
+#include "../Connection.h"
 #include "Settings.h"
 #include "ServerStream.h"
 #include "ServerTransport.h"
@@ -20,6 +21,8 @@ public:
     void onInput(StreamBuf& buf);
 
     ServerStream* getStream(uint32_t id);
+
+    void sendServerPreface();
 
 private:
     Connection* connection_;
@@ -79,6 +82,13 @@ ServerTransport::Impl::Impl(
 }
 
 void ServerTransport::Impl::onInput(StreamBuf&) {
+    // FIXME: This should be sent *once* *after* the HTTP/1.1 101 Switching
+    // Protocols response. Sending it in the constructor is too soon (101 hasn't
+    // been sent), and sending it on every input is _obviously_ wrong.
+    // This entire class might need a separate path when constructing from
+    // HTTP/1 upgrade (static constructor that handles the upgrade).
+    sendServerPreface();
+
     // TODO
 }
 
@@ -88,6 +98,18 @@ ServerStream* ServerTransport::Impl::getStream(uint32_t id) {
         return it->second.get();
 
     return nullptr;
+}
+
+void ServerTransport::Impl::sendServerPreface() {
+    // TODO: Replace with framing and stuff.
+    const char settingsFrame[] = {
+        0x00, 0x00, 0x00, // length (0)
+        0x04, // type (SETTINGS)
+        0x00, // flags (0)
+        0x00, 0x00, 0x00, 0x00, // reserved bit, 31-bit stream id (must be 0 for SETTINGS)
+    };
+
+    connection_->send(settingsFrame, sizeof(settingsFrame) / sizeof(settingsFrame[0]));
 }
 
 } // namespace

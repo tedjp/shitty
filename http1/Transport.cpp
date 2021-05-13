@@ -17,6 +17,8 @@ using shitty::Request;
 using shitty::Response;
 using shitty::StreamBuf;
 
+namespace shitty::http1 {
+
 Transport::Transport(Connection* connection):
     connection_(connection)
 {}
@@ -169,6 +171,22 @@ void Transport::headerContinuation(std::string&& line) {
     it->second.append(std::move(line));
 }
 
+void Transport::sendHeaders(
+        const std::string& first_line,
+        Headers headers)
+{
+    Payload payload(&connection_->outgoingStreamBuf());
+
+    payload.send(first_line.data(), first_line.size());
+    payload.send("\r\n", 2);
+
+    Stream::setGeneralServerHeaders(headers);
+    payload.send(renderHeaders(headers));
+
+    // Flush Payload to connection
+    connection_->send(reinterpret_cast<const char*>(payload.data()), payload.size());
+}
+
 void Transport::sendMessage(
         const std::string& first_line,
         const Message& message) {
@@ -197,3 +215,5 @@ IncomingMessage
 Transport::messageFromFirstLine(const std::string& first_line) {
     return {first_line};
 }
+
+} // namespace

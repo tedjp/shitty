@@ -75,10 +75,13 @@ void ServerTransport::upgrade(
         Request&& request) {
     assert(newTransport != nullptr);
 
-    Response response(101); // Switching Protocols
-    response.headers().add("Connection", "Upgrade");
-    response.headers().set("Upgrade", token);
-    sendResponse(move(response));
+    {
+        Headers headers;
+        headers.add("Connection", "Upgrade");
+        headers.set("Upgrade", token);
+        // 101 Switching Protocols
+        sendHeaders(statusLine(101), move(headers));
+    }
 
     Connection* connection = getConnection();
     connection->setTransport(move(newTransport));

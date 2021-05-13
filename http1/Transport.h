@@ -24,6 +24,8 @@ protected:
     virtual void sendMessage(const std::string& first_line, const Message& message);
     virtual void onEndOfMessageHeaders(Headers& headers) {}
 
+    void sendHeaders(const std::string& first_line, Headers headers);
+
 private:
     static IncomingMessage
         messageFromFirstLine(const std::string& first_line);

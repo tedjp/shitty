@@ -29,6 +29,9 @@ ssize_t
 getContentLength(const Headers& headers);
 
 std::string
+statusLine(uint_fast16_t statusCode);
+
+std::string
 statusLine(const Response& response);
 
 std::string

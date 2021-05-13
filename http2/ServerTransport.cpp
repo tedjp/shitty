@@ -22,7 +22,7 @@ public:
 
     ServerStream* getStream(uint32_t id);
 
-    void sendServerPreface();
+    void sendPreface();
 
 private:
     Connection* connection_;
@@ -33,6 +33,8 @@ private:
     // destroyed in the same container (potential rehashing causing values to
     // move).
     unordered_map<uint32_t, unique_ptr<ServerStream>> streams_;
+
+    bool prefaceSent_ = false;
 };
 
 ServerTransport::ServerTransport(
@@ -87,7 +89,7 @@ void ServerTransport::Impl::onInput(StreamBuf&) {
     // been sent), and sending it on every input is _obviously_ wrong.
     // This entire class might need a separate path when constructing from
     // HTTP/1 upgrade (static constructor that handles the upgrade).
-    sendServerPreface();
+    sendPreface();
 
     // TODO
 }
@@ -100,7 +102,12 @@ ServerStream* ServerTransport::Impl::getStream(uint32_t id) {
     return nullptr;
 }
 
-void ServerTransport::Impl::sendServerPreface() {
+void ServerTransport::Impl::sendPreface() {
+    if (prefaceSent_)
+        return;
+
+    prefaceSent_ = true;
+
     // TODO: Replace with framing and stuff.
     const char settingsFrame[] = {
         0x00, 0x00, 0x00, // length (0)

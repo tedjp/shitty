@@ -4,6 +4,7 @@
 #include <string_view>
 
 #include "../Transport.h"
+#include "Frame.h"
 #include "ServerStream.h"
 
 namespace shitty {

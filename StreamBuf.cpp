@@ -44,3 +44,9 @@ void StreamBuf::write(const void *data, size_t len) {
     memcpy(tail(), data, len);
     addTailContent(len);
 }
+
+void StreamBuf::writeOctet(uint8_t octet) {
+    ensure(1);
+    *tail() = static_cast<char>(octet);
+    addTailContent(1);
+}

@@ -32,8 +32,10 @@ OBJS = \
 	   http1/ServerTransport.o \
 	   http1/Transport.o \
 	   http1/UpgradeRegistry.o \
+	   http2/Frame.o \
 	   http2/ServerStream.o \
 	   http2/ServerTransport.o \
+	   http2/Settings.o \
 	   Message.o \
 	   ProxyHandler.o \
 	   Request.o \

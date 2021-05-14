@@ -157,6 +157,10 @@ void Connection::send(const char *data, size_t len) {
         queue_and_send(data, len);
 }
 
+void Connection::send(const Payload& payload) {
+    send(reinterpret_cast<const char*>(payload.data()), payload.size());
+}
+
 void Connection::send_immediate(const char *data, size_t len) {
     ssize_t sent;
     size_t total_sent = 0;
@@ -184,6 +188,6 @@ void Connection::queue_and_send(const char *data, size_t len) {
     onPollOut();
 }
 
-shitty::StreamBuf& Connection::outgoingStreamBuf() {
-    return outgoing_;
+shitty::Payload Connection::getOutgoingPayload() {
+    return Payload(&outgoing_);
 }

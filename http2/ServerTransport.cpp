@@ -1,3 +1,5 @@
+#include <cassert>
+#include <optional>
 #include <unordered_map>
 
 #include <fb64.h> // https://github.com/tedjp/fb64
@@ -23,10 +25,17 @@ public:
     ServerStream* getStream(uint32_t id);
 
     void sendPreface();
+    void receivePreface(StreamBuf& buf);
+
+    void receiveFrameHeader(StreamBuf& buf);
+    void receiveFrameData(StreamBuf& buf);
+
+    void ackSettings();
 
 private:
     Connection* connection_;
-    Settings settings_;
+    Settings localSettings_;
+    Settings peerSettings_;
     const Routes* routes_;
     // unique_ptr indirection here is so that ServerStream
     // pointers/references are not invalidated by other streams being created or
@@ -34,7 +43,12 @@ private:
     // move).
     unordered_map<uint32_t, unique_ptr<ServerStream>> streams_;
 
+    // has_value when an entire frame header has been read, but the body has not
+    // been completely processed.
+    std::optional<FrameHeader> currentFrameHeader_;
+
     bool prefaceSent_ = false;
+    bool prefaceReceived_ = false;
 };
 
 ServerTransport::ServerTransport(
@@ -77,21 +91,28 @@ ServerTransport::Impl::Impl(
         if (decodeResult != 0)
             throw runtime_error("HTTP2-Settings decode error");
 
-        settings_ = Settings::createFromBuffer(span(decoded, decodedLen));
+        peerSettings_ = Settings::createFromBuffer(span(decoded, decodedLen));
     }
 
     streams_.emplace(1, make_unique<ServerStream>());
 }
 
-void ServerTransport::Impl::onInput(StreamBuf&) {
+void ServerTransport::Impl::onInput(StreamBuf& buf) {
     // FIXME: This should be sent *once* *after* the HTTP/1.1 101 Switching
     // Protocols response. Sending it in the constructor is too soon (101 hasn't
     // been sent), and sending it on every input is _obviously_ wrong.
     // This entire class might need a separate path when constructing from
     // HTTP/1 upgrade (static constructor that handles the upgrade).
-    sendPreface();
+    if (!prefaceSent_)
+        sendPreface();
 
-    // TODO
+    if (!prefaceReceived_)
+        receivePreface(buf);
+
+    if (!currentFrameHeader_.has_value())
+        receiveFrameHeader(buf);
+    else
+        receiveFrameData(buf);
 }
 
 ServerStream* ServerTransport::Impl::getStream(uint32_t id) {
@@ -103,9 +124,6 @@ ServerStream* ServerTransport::Impl::getStream(uint32_t id) {
 }
 
 void ServerTransport::Impl::sendPreface() {
-    if (prefaceSent_)
-        return;
-
     prefaceSent_ = true;
 
     // TODO: Replace with framing and stuff.
@@ -117,6 +135,82 @@ void ServerTransport::Impl::sendPreface() {
     };
 
     connection_->send(settingsFrame, sizeof(settingsFrame) / sizeof(settingsFrame[0]));
+}
+
+void ServerTransport::Impl::receivePreface(StreamBuf& buf) {
+    static constexpr uint8_t clientPreface[24]
+        = {
+            0x50, 0x52, 0x49, 0x20,  0x2a, 0x20, 0x48, 0x54,
+            0x54, 0x50, 0x2f, 0x32,  0x2e, 0x30, 0x0d, 0x0a,
+            0x0d, 0x0a, 0x53, 0x4d,  0x0d, 0x0a, 0x0d, 0x0a };
+
+    if (buf.size() < sizeof(clientPreface))
+        return; // come back later
+
+    if (memcmp(buf.data(), clientPreface, sizeof(clientPreface)) != 0)
+        throw std::runtime_error("Invalid connection preface"); // connection error
+
+    prefaceReceived_ = true;
+
+    buf.advance(sizeof(clientPreface));
+
+    if (!buf.empty()) {
+        // go straight into reading frames (probably settings to begin with, as
+        // is required).
+        receiveFrameHeader(buf);
+    }
+}
+
+void ServerTransport::Impl::receiveFrameHeader(StreamBuf& buf) {
+    if (buf.size() < FrameHeader::SIZE)
+        return; // call back later
+
+    assert(!currentFrameHeader_.has_value());
+
+    currentFrameHeader_ = readFrameHeader(buf);
+    const FrameHeader& header = currentFrameHeader_.value();
+
+    if (buf.size() < header.length)
+        return; // wait for more data
+
+    receiveFrameData(buf);
+}
+
+void ServerTransport::Impl::receiveFrameData(StreamBuf& buf) {
+    assert(currentFrameHeader_.has_value());
+    const FrameHeader& header = currentFrameHeader_.value();
+
+    if (buf.size() < header.length)
+        return; // wait for data
+
+    switch (header.type) {
+    case FrameId::SETTINGS:
+        if ((header.flags & 0x01) == 0) { // ACK bit not set; TODO clearer API
+            peerSettings_ = Settings::createFromBuffer(span(buf.data(), header.length));
+            ackSettings();
+        }
+        break;
+
+    default:
+        // ignore
+        //std::cerr << "Unhandled frame type " << header.type << '\n';
+        break;
+    }
+
+    buf.advance(header.length);
+    // Prepare to read next frame header
+    currentFrameHeader_.reset();
+}
+
+void ServerTransport::Impl::ackSettings() {
+    FrameHeader header = SettingsFrameHeader;
+    header.flags = 0x01; // ACK
+
+    Payload payload = connection_->getOutgoingPayload();
+
+    writeFrameHeader(header, payload);
+
+    connection_->send(payload);
 }
 
 } // namespace

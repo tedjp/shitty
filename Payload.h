@@ -1,5 +1,10 @@
 #pragma once
 
+#include <array>
+#include <string>
+
+#include "StreamBuf.h"
+
 namespace shitty {
 
 // Corking
@@ -29,16 +34,22 @@ namespace shitty {
 // is constructed into a Payload containing all headers, before being sent. That
 // probably involves having Payload & StreamBuf inherit from a common abstract
 // base Writer.
-// Default Capacity 1440 is a common TCP/IPv6 MSS.
-// XXX: Is this better than just writing straight to the StreamBuf?
 
-template <size_t Capacity = 1440>
+// XXX: Replace this with a BufferedWriter that has an underlying Writer
+// (anything with a write(buf, len) method). This is confusing.
+
+// Proper use of a Payload *requires* calling send() on the destination
+// connection; the StreamBuf target is only for buffering overflow - it doesn't
+// handle notification that the socket needs to be written to.
+
 class Payload {
 public:
     Payload(StreamBuf* target);
+
     void write(const std::string& str);
     void send(const std::string& str);
     void write(const void *buf, size_t len);
+    void writeOctet(uint8_t octet);
     void send(const void *buf, size_t len);
     const void *data() const;
     void *data();
@@ -46,11 +57,17 @@ public:
     size_t tailroom() const;
     bool empty() const;
     void clear();
+    // WARNING: This is not the API you're after. Call send() on the underlying
+    // connection. flush flushes to the outgoing StreamBuf but doesn't start
+    // polling for output if the output buffer was already empty.
     void flush();
 
 private:
+    // Capacity 1440 is a common TCP/IPv6 MSS.
+    constexpr static size_t capacity_ = 1440;
+
     size_t len_ = 0;
-    std::array<char, Capacity> data_;
+    std::array<char, capacity_> data_;
     StreamBuf* target_ = nullptr;
 };
 

@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -5,7 +6,6 @@
 // TODO: header cleanup
 #include "HTTP1.h"
 #include "Transport.h"
-#include "../Payload.h"
 #include "../Request.h"
 #include "../StatusStrings.h"
 #include "../Stream.h"
@@ -123,7 +123,17 @@ void Transport::markHeadersComplete() {
 }
 
 void Transport::handleMessage() {
+    // Find out whether `this` has been replaced as the connection by
+    // handleIncomingMessage() without accessing anything in `this` after
+    // handleIncomingMessage() returns.
+    Connection* connection = connection_;
+    assert(connection != nullptr);
+
     handleIncomingMessage(std::move(incoming_message_.value()));
+
+    if (connection->getTransport() != this)
+        return; // `this` has been replaced by an upgraded transport. Return all stack frames immediately.
+
     resetIncomingMessage();
 }
 
@@ -175,7 +185,7 @@ void Transport::sendHeaders(
         const std::string& first_line,
         Headers headers)
 {
-    Payload payload(&connection_->outgoingStreamBuf());
+    Payload payload = connection_->getOutgoingPayload();
 
     payload.send(first_line.data(), first_line.size());
     payload.send("\r\n", 2);
@@ -183,14 +193,13 @@ void Transport::sendHeaders(
     Stream::setGeneralServerHeaders(headers);
     payload.send(renderHeaders(headers));
 
-    // Flush Payload to connection
-    connection_->send(reinterpret_cast<const char*>(payload.data()), payload.size());
+    connection_->send(payload);
 }
 
 void Transport::sendMessage(
         const std::string& first_line,
         const Message& message) {
-    Payload payload(&connection_->outgoingStreamBuf());
+    Payload payload = connection_->getOutgoingPayload();
 
     payload.send(first_line.data(), first_line.size());
     payload.send("\r\n", 2);
@@ -200,15 +209,9 @@ void Transport::sendMessage(
     setContentLength(outgoingHeaders, message.body().size());
 
     payload.send(renderHeaders(outgoingHeaders));
+    payload.send(message.body());
 
-    // Combine header & body if there's room.
-    if (message.body().size() < payload.tailroom()) {
-        payload.send(message.body());
-        connection_->send(reinterpret_cast<const char*>(payload.data()), payload.size());
-    } else {
-        payload.flush();
-        connection_->send(message.body().data(), message.body().size());
-    }
+    connection_->send(payload);
 }
 
 IncomingMessage

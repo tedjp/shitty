@@ -5,6 +5,7 @@
 
 #include "ConnectionManager.h"
 #include "EventReceiver.h"
+#include "Payload.h"
 #include "StreamBuf.h"
 #include "Transport.h"
 
@@ -44,10 +45,11 @@ public:
     void setConnectionManager(ConnectionManager *manager);
 
     // Send a buffer.
+    //
     // Any data that cannot be sent immediately will be queued in the outgoing_
-    // StreamBuf. Use a Payload to combine small writes into a single TCP
-    // packet.
+    // StreamBuf. Use a Payload to combine small writes into a single TCP packet.
     void send(const char *data, size_t len);
+    void send(const Payload& payload);
 
     // Read from the StreamBuf
     ptrdiff_t recv(void *buf, size_t buflen);
@@ -56,7 +58,7 @@ public:
 
     inline bool operator==(const Connection& other);
 
-    StreamBuf& outgoingStreamBuf();
+    Payload getOutgoingPayload();
 
 private:
     void subscribe_to_input();

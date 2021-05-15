@@ -25,7 +25,7 @@ Clone submodules to ensure it is available:
 
 ## Usage
 
-    make depend && make && sudo ./hello-world
+    make depend && make -j && sudo ./hello-world
 
 ## HPACK — HTTP/2 header compression
 

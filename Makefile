@@ -11,10 +11,10 @@ all: \
 depend: fb64 hpack
 
 fb64:
-	$(MAKE) -C dependencies/fb64 -j
+	$(MAKE) -j -C dependencies/fb64
 
 hpack:
-	$(MAKE) -C dependencies/hpack -j
+	$(MAKE) -j -C dependencies/hpack
 
 CXX = g++ -std=c++20 -pipe -g -Wall -Werror -fmax-errors=1 -O0 -march=native
 CPPFLAGS = -Idependencies

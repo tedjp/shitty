@@ -3,7 +3,7 @@
 all: libhpack.a
 
 libhpack.a: header.o number.o
-	$(MAKE) -C huffy
+	$(MAKE) -j -C huffy
 	ar rcs $@ $^ \
 		huffy/bitbuf.o \
 		huffy/decode.o \

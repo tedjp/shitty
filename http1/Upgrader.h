@@ -13,7 +13,12 @@ public:
     Upgrader& operator=(Upgrader&&) = default;
     virtual ~Upgrader() = default;
 
-    virtual std::unique_ptr<shitty::Transport> upgrade(http1::Transport* existingTransport) const = 0;
+    // May use the request, but shall not respond.
+    // The Transport's onRequest function will be invoked later with ownership
+    // of the Request.
+    virtual std::unique_ptr<shitty::Transport> upgrade(
+            http1::Transport* existingTransport,
+            const Request& request) const = 0;
 };
 
 } // namespace

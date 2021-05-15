@@ -1,19 +1,20 @@
 language: cpp
 
-dist: xenial
+# focal = 20.04 (GCC 9)
+dist: focal
 
-# Ubuntu 16.04 (xenial)'s GCC 5 doesn't support C++17, so pull in a newer
-# compiler.
+# Ubuntu 20.04 (focal)'s GCC 9 only supports C++20 as "-std=c++2a", not
+# "-std=c++20", so pull in GCC 11 instead.
 addons:
   apt:
     sources:
     - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
-    - g++-8
+    - g++-11
 
 # shitty build system doesn't allow the compiler to be specified
 sudo: true
 before_install:
-  sudo sh -c '(cd /usr/local/bin && ln -sf ../../bin/g++-8 g++)'
+  sudo sh -c '(cd /usr/local/bin && ln -sf ../../bin/g++-11 g++)'
 
-script: set -e; for dir in hpack/huffy hpack .; do (cd $dir && make -j && make check); done
+script: set -e; make depend; for dir in hpack/huffy hpack .; do (cd $dir && make -j && make check); done

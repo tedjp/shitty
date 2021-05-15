@@ -2,38 +2,31 @@
 
 namespace shitty {
 
-template <size_t Capacity>
-Payload<Capacity>::Payload(StreamBuf *target):
+inline Payload::Payload(StreamBuf *target):
     target_(target)
 {}
 
-template <size_t Capacity>
-size_t Payload<Capacity>::size() const {
+inline size_t Payload::size() const {
     return len_;
 }
 
-template <size_t Capacity>
-bool Payload<Capacity>::empty() const {
+inline bool Payload::empty() const {
     return size() == 0;
 }
 
-template <size_t Capacity>
-const void* Payload<Capacity>::data() const {
+inline const void* Payload::data() const {
     return data_.data();
 }
 
-template <size_t Capacity>
-void* Payload<Capacity>::data() {
+inline void* Payload::data() {
     return data_.data();
 }
 
-template <size_t Capacity>
-void Payload<Capacity>::clear() {
+inline void Payload::clear() {
     len_ = 0;
 }
 
-template <size_t Capacity>
-void Payload<Capacity>::flush() {
+inline void Payload::flush() {
 #if 0 // nice API
     target_->write(buf_.data(), size());
 #else
@@ -46,8 +39,7 @@ void Payload<Capacity>::flush() {
 
 // [`buf`, `buf + len`) must not point to memory within this Payload
 // (write() uses memcpy ()which is not overlap-safe.)
-template <size_t Capacity>
-void Payload<Capacity>::write(const void *buf, size_t len) {
+inline void Payload::write(const void *buf, size_t len) {
     if (size() + len > data_.size())
         flush();
 
@@ -60,23 +52,23 @@ void Payload<Capacity>::write(const void *buf, size_t len) {
     len_ += len;
 }
 
-template <size_t Capacity>
-void Payload<Capacity>::write(const std::string& str) {
+inline void Payload::write(const std::string& str) {
     write(str.data(), str.size());
 }
 
-template <size_t Capacity>
-void Payload<Capacity>::send(const void *buf, size_t len) {
+inline void Payload::writeOctet(uint8_t octet) {
+    write(&octet, 1);
+}
+
+inline void Payload::send(const void *buf, size_t len) {
     write(buf, len);
 }
 
-template <size_t Capacity>
-void Payload<Capacity>::send(const std::string& str) {
+inline void Payload::send(const std::string& str) {
     write(str.data(), str.size());
 }
 
-template <size_t Capacity>
-size_t Payload<Capacity>::tailroom() const {
+inline size_t Payload::tailroom() const {
     return data_.size() - len_;
 }
 

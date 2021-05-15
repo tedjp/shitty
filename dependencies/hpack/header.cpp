@@ -360,6 +360,9 @@ StaticTable::get(unsigned index) const {
 
 // TODO StaticTable::find()
 
+// static
+const StaticTable HeaderTable::stable_;
+
 Header
 HeaderTable::get(unsigned index) const {
     // StaticTable validates index == 0

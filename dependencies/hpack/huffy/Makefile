@@ -1,6 +1,6 @@
 .PHONY: all check clean
 
-CC = gcc -std=gnu99 -Wall -g
+CC = gcc -std=gnu99 -pipe -fPIC -Wall -g
 
 all: bitbuf.o encode.o decode.o
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 namespace shitty {
@@ -53,6 +54,8 @@ public:
     }
 
     void write(const void *data, size_t len);
+
+    void writeOctet(uint8_t octet);
 
     // Avoid doing this TBH.
     void shrink_to_fit() {

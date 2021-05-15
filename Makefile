@@ -17,7 +17,7 @@ hpack:
 	$(MAKE) -C dependencies/hpack -j
 
 CXX = g++ -std=c++20 -pipe -g -Wall -Werror -fmax-errors=1 -O0 -march=native
-CPPFLAGS = -Idependencies/fb64
+CPPFLAGS = -Idependencies
 COMPILE_OBJ = $(CXX) $(CPPFLAGS) -c
 
 %.o: %.cpp %.h
@@ -60,6 +60,7 @@ OBJS = \
 
 LDLIBS = \
 		 -Ldependencies/fb64 -lfb64 \
+		 -Ldependencies/hpack -lhpack \
 		 #
 
 hello-world: HelloWorld.cpp $(OBJS)

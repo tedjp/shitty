@@ -2,7 +2,8 @@
 #include <optional>
 #include <unordered_map>
 
-#include <fb64.h> // https://github.com/tedjp/fb64
+#include <fb64/fb64.h> // https://github.com/tedjp/fb64
+#include <hpack/header.h>
 
 #include "../Connection.h"
 #include "FlowControl.h"
@@ -39,6 +40,10 @@ private:
     Settings localSettings_;
     Settings peerSettings_;
     const Routes* routes_;
+
+    // XXX: HPACK symbols ought to be namespaced properly
+    HeaderTable hpack_;
+
     // unique_ptr indirection here is so that ServerStream
     // pointers/references are not invalidated by other streams being created or
     // destroyed in the same container (potential rehashing causing values to

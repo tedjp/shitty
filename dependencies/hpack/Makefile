@@ -1,12 +1,20 @@
 .PHONY: all check clean
 
-all: header.o number.o
+all: libhpack.a
+
+libhpack.a: header.o number.o
+	$(MAKE) -C huffy
+	ar rcs $@ $^ \
+		huffy/bitbuf.o \
+		huffy/decode.o \
+		huffy/encode.o \
+		#
 
 number.o: number.c number.h
-	gcc -std=gnu99 -Wall -c -o $@ $<
+	gcc -std=gnu99 -Wall -fPIC -c -o $@ $<
 
 header.o: header.cpp header.h number.h huffy/decode.h
-	g++ -std=gnu++11 -Wall -Wextra -c -o $@ $<
+	g++ -std=gnu++11 -Wall -Wextra -fPIC -c -o $@ $<
 
 test: test.c number.o
 	gcc -std=gnu99 -Wall -o $@ $^
@@ -15,4 +23,5 @@ check: test
 	./$<
 
 clean:
-	rm -f test *.o
+	$(MAKE) -C huffy clean
+	rm -f test libhpack.a *.o

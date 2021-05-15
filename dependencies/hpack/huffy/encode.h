@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Returns negative value on error.
 // On error, the caller should probably just use a non-encoded string.
 // This does *not* fail if the encoded version is longer than the plaintext.
@@ -14,5 +18,9 @@
 // Encoded version includes the length prefix, so you might want to provide room
 // for it in your buffer ;)
 ssize_t huffman_encode(const uint8_t *input, size_t input_len, uint8_t *buf, size_t buflen);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

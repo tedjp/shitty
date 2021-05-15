@@ -162,10 +162,10 @@ void ServerTransport::Impl::receivePreface(StreamBuf& buf) {
 }
 
 void ServerTransport::Impl::receiveFrameHeader(StreamBuf& buf) {
+    assert(!currentFrameHeader_.has_value());
+
     if (buf.size() < FrameHeader::SIZE)
         return; // call back later
-
-    assert(!currentFrameHeader_.has_value());
 
     currentFrameHeader_ = readFrameHeader(buf);
     const FrameHeader& header = currentFrameHeader_.value();
@@ -184,8 +184,8 @@ void ServerTransport::Impl::receiveFrameData(StreamBuf& buf) {
         return; // wait for data
 
     switch (header.type) {
-    case FrameId::SETTINGS:
-        if ((header.flags & 0x01) == 0) { // ACK bit not set; TODO clearer API
+    case FrameType::SETTINGS:
+        if (!header.flags.test(0)) { // ACK bit not set
             peerSettings_ = Settings::createFromBuffer(span(buf.data(), header.length));
             ackSettings();
         }
@@ -203,7 +203,7 @@ void ServerTransport::Impl::receiveFrameData(StreamBuf& buf) {
 }
 
 void ServerTransport::Impl::ackSettings() {
-    FrameHeader header = SettingsFrameHeader;
+    FrameHeader header(FrameType::SETTINGS);
     header.flags = 0x01; // ACK
 
     Payload payload = connection_->getOutgoingPayload();

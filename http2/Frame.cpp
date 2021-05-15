@@ -8,42 +8,37 @@
 
 namespace shitty::http2 {
 
-const FrameHeader DataFrameHeader = FrameHeader{ 0, FrameId::DATA };
-const FrameHeader HeadersFrameHeader = FrameHeader{ 0, FrameId::HEADERS };
-const FrameHeader PriorityFrameHeader = FrameHeader{ 0, FrameId::PRIORITY };
-const FrameHeader ResetStreamFrameHeader = FrameHeader{ 0, FrameId::RST_STREAM };
-const FrameHeader SettingsFrameHeader = FrameHeader{ 0, FrameId::SETTINGS };
-const FrameHeader PushPromiseFrameHeader = FrameHeader{ 0, FrameId::PUSH_PROMISE };
-const FrameHeader PingFrameHeader = FrameHeader{ 0, FrameId::PING };
-const FrameHeader GoAwayFrameHeader = FrameHeader{ 0, FrameId::GOAWAY };
-const FrameHeader WindowUpdateFrameHeader = FrameHeader{ 0, FrameId::WINDOW_UPDATE };
-const FrameHeader ContinuationFrameHeader = FrameHeader{ 0, FrameId::CONTINUATION };
-
 // XXX: This ought to be inlined and ideally a single write of a packed
 // structure.
 void writeFrameHeader(const FrameHeader& frameHeader, Payload& out) {
     out.writeOctet(static_cast<uint8_t>(frameHeader.length >> 16));
     out.writeOctet(static_cast<uint8_t>(frameHeader.length >>  8));
     out.writeOctet(static_cast<uint8_t>(frameHeader.length >>  0));
-    out.writeOctet(frameHeader.type);
-    out.writeOctet(frameHeader.flags);
+    out.writeOctet(static_cast<uint8_t>(frameHeader.type));
+    out.writeOctet(static_cast<uint8_t>(frameHeader.flags.to_ulong()));
     uint32_t nboReservedStreamId = htonl(
             (frameHeader.reserved << 31) | frameHeader.streamId);
     out.write(&nboReservedStreamId, sizeof(nboReservedStreamId));
 }
 
-FrameHeader readFrameHeader(StreamBuf& input) {
-    FrameHeader header;
+std::optional<FrameHeader> tryReadFrameHeader(StreamBuf& input) {
+    if (input.size() < FrameHeader::SIZE)
+        return std::nullopt;
 
-    if (input.size() < 9)
-        throw std::runtime_error("incomplete header"); // XXX: Maybe it hasn't arrived yet. call back.
+    return readFrameHeader(input);
+}
+
+FrameHeader readFrameHeader(StreamBuf& input) {
+    if (input.size() < FrameHeader::SIZE)
+        throw std::runtime_error("incomplete header");
+
+    FrameHeader header(FrameType(input.data()[3]));
 
     header.length
         = static_cast<uint32_t>(input.data()[0]) << 16
         | static_cast<uint32_t>(input.data()[1]) <<  8
         | static_cast<uint32_t>(input.data()[2]) <<  0;
 
-    header.type = input.data()[3];
     header.flags = input.data()[4];
 
     uint32_t reservedAndStreamId

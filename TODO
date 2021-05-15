@@ -12,3 +12,4 @@
   Transport implements protocol/mux, Stream is {client,server} interface.
   ClientTransportSource should be a StreamSource that internally uses a
   Transport/Connection.
+- HTTP client (like curl).

@@ -32,4 +32,4 @@ Clone submodules to ensure it is available:
 Includes a functional implementation of HPACK, HTTP/2's header
 compression/decompression algorithm. It's not integrated into the server just
 yet.
-See the `hpack` & `hpack/huffy` directories.
+See the `dependencies/hpack` & `dependencies/hpack/huffy` directories.

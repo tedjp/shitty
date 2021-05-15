@@ -8,8 +8,13 @@ all: \
 	proxy \
 	#
 
-depend:
+depend: fb64 hpack
+
+fb64:
 	$(MAKE) -C dependencies/fb64 -j
+
+hpack:
+	$(MAKE) -C dependencies/hpack -j
 
 CXX = g++ -std=c++20 -pipe -g -Wall -Werror -fmax-errors=1 -O0 -march=native
 CPPFLAGS = -Idependencies/fb64
@@ -76,8 +81,10 @@ clean:
 		proxy \
 		#
 	$(MAKE) -C dependencies/fb64 clean
+	$(MAKE) -C dependencies/hpack clean
 
 check:
 	$(MAKE) -C dependencies/fb64 check
+	$(MAKE) -C dependencies/hpack check
 
-.PHONY: all check clean depend
+.PHONY: all check clean depend fb64 hpack

@@ -18,7 +18,7 @@ Prints incoming requests.
 
 [**fb64**](https://github.com/tedjp/fb64) is required for HTTP/2 upgrade.
 
-Clone submodules to ensure it is available:
+Clone submodules to ensure it's available:
 
     git submodule init
     git submodule update

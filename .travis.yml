@@ -17,4 +17,4 @@ sudo: true
 before_install:
   sudo sh -c '(cd /usr/local/bin && ln -sf ../../bin/g++-11 g++)'
 
-script: set -e; make depend; for dir in hpack/huffy hpack .; do (cd $dir && make -j && make check); done
+script: set -e; make depend; make -j; make check

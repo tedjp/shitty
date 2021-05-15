@@ -11,7 +11,7 @@ all: \
 depend:
 	$(MAKE) -C dependencies/fb64 -j
 
-CXX = g++ -std=c++20 -g -Wall -Werror -fmax-errors=1 -O0 -march=native
+CXX = g++ -std=c++20 -pipe -g -Wall -Werror -fmax-errors=1 -O0 -march=native
 CPPFLAGS = -Idependencies/fb64
 COMPILE_OBJ = $(CXX) $(CPPFLAGS) -c
 

@@ -5,6 +5,7 @@
 #include <fb64.h> // https://github.com/tedjp/fb64
 
 #include "../Connection.h"
+#include "FlowControl.h"
 #include "Settings.h"
 #include "ServerStream.h"
 #include "ServerTransport.h"
@@ -47,8 +48,13 @@ private:
     // been completely processed.
     std::optional<FrameHeader> currentFrameHeader_;
 
+    // connection window size
+    uint32_t windowSize_ = 65535; // RFC 7540 6.9.2
+
+    // TODO: Shrink to bits
     bool prefaceSent_ = false;
     bool prefaceReceived_ = false;
+    bool windowUpdateReceived_ = false;
 };
 
 ServerTransport::ServerTransport(
@@ -187,8 +193,47 @@ void ServerTransport::Impl::receiveFrameData(StreamBuf& buf) {
     case FrameType::SETTINGS:
         if (!IsSettingsACK(header)) {
             peerSettings_ = Settings::createFromBuffer(span(buf.data(), header.length));
+
+            if (!windowUpdateReceived_)
+                windowSize_ = peerSettings_.value(Settings::InitialWindowSize);
+
             ackSettings();
         }
+        break;
+
+    case FrameType::WINDOW_UPDATE:
+        if (header.length != 4) // TODO: connection error FRAME_SIZE_ERROR
+            throw runtime_error("WINDOW_UPDATE wrong size");
+
+        {
+            // 1 reserved bit, 31 "Window Size Increment" bits
+            int32_t windowSize = 0;
+            windowSize
+                = buf.data()[0] << 24
+                | buf.data()[1] << 16
+                | buf.data()[2] <<  8
+                | buf.data()[3] <<  0;
+            // ignore reserved bit
+            windowSize &= 0x7fffffff;
+
+            if (header.streamId == 0) {
+                try {
+                    windowSize_ = addWindowSize(windowSize_, windowSize);
+                } catch (std::runtime_error& err) {
+                    // FIXME: This is a connection error (6.9), handle
+                    // accordingly (5.4.1)
+                    throw std::runtime_error(
+                            string("connection error: ") + err.what());
+                }
+
+                windowUpdateReceived_ = true;
+            } else {
+                auto stream = streams_.find(header.streamId);
+                if (stream != streams_.end())
+                    stream->second->addWindowSize(windowSize);
+            }
+        }
+
         break;
 
     default:
@@ -204,7 +249,7 @@ void ServerTransport::Impl::receiveFrameData(StreamBuf& buf) {
 
 void ServerTransport::Impl::ackSettings() {
     FrameHeader header(FrameType::SETTINGS);
-    header.flags = 0x01; // ACK
+    header.flags.set(0); // ACK
 
     Payload payload = connection_->getOutgoingPayload();
 

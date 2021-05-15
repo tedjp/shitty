@@ -6,6 +6,7 @@
 
 #include "../Connection.h"
 #include "FlowControl.h"
+#include "HeadersFrame.h"
 #include "Settings.h"
 #include "ServerStream.h"
 #include "ServerTransport.h"

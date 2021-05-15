@@ -42,4 +42,10 @@ std::optional<FrameHeader> tryReadFrameHeader(StreamBuf& input);
 
 void writeFrameHeader(const FrameHeader& frameHeader, Payload& payload);
 
+// Convenience predicates for various standard frame types
+// Don't worry about frame-type check duplication -- it'll optimize away.
+inline bool IsSettingsACK(const FrameHeader& frameHeader) {
+    return frameHeader.type == FrameType::SETTINGS && frameHeader.flags.test(0);
+}
+
 } // namespace

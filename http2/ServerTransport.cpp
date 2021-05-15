@@ -185,7 +185,7 @@ void ServerTransport::Impl::receiveFrameData(StreamBuf& buf) {
 
     switch (header.type) {
     case FrameType::SETTINGS:
-        if (!header.flags.test(0)) { // ACK bit not set
+        if (!IsSettingsACK(header)) {
             peerSettings_ = Settings::createFromBuffer(span(buf.data(), header.length));
             ackSettings();
         }

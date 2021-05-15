@@ -102,7 +102,7 @@ void Server::Impl::run() {
 static void tcp_defer_accept(int sock) {
     const int secs = 5;
     if (setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, &secs, sizeof(secs)) == -1)
-        perror("TCP_DEFER_ACCEPT");
+        perror("(this is harmless) TCP_DEFER_ACCEPT");
 }
 
 void Server::Impl::setup() {

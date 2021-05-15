@@ -1,4 +1,4 @@
-# shitty — A C++ HTTP Server library
+# shitty — A C++ HTTP Server
 
 ## Examples
 

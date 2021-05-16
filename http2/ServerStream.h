@@ -8,14 +8,24 @@
 
 namespace shitty::http2 {
 
+class ServerTransport;
+
 class ServerStream: public shitty::ServerStream {
 public:
+    ServerStream(
+            uint32_t id,
+            ServerTransport* transport);
+
     void onRequest(Request&&) override;
     void sendResponse(const Response&) override;
 
     void addWindowSize(int32_t windowSize);
 
 private:
+    uint32_t id_ = 0;
+    // XXX: Hold a pointer to the Impl instead to avoid an indirection
+    ServerTransport* transport_ = nullptr;
+
     // initial value from RFC 7540 6.5.2.
     int32_t windowSize_ = 65535;
 };

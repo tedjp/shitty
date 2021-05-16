@@ -86,6 +86,7 @@ static const struct static_table_entry static_table[] = {
     { "www-authenticate", "" },
 };
 
+// TODO: Expose these so callers can use them directly in Header construction.
 enum class StaticHeader: uint_fast8_t {
     AUTHORITY = 1,
     METHOD_GET,
@@ -348,7 +349,14 @@ DynamicTable::resize(unsigned new_hpack_size) {
     table_.erase(table_.begin() + (table_.size() - nremove), table_.end());
 }
 
-// TODO: DynamicTable::find()
+// Returns the index of a match in the dynamic table, offset by the size of the
+// static table (ie. the final network-appropriate index), or zero if not found.
+pair<unsigned, unsigned> DynamicTable::getIndex(const Header&) const {
+    // TODO: Implement.
+    // Don't forget to offset by the number of entries in the static table when
+    // non-zero.
+    return {0, 0};
+}
 
 Header
 StaticTable::get(unsigned index) const {
@@ -358,7 +366,10 @@ StaticTable::get(unsigned index) const {
     return Header(static_table[index].name, static_table[index].value);
 }
 
-// TODO StaticTable::find()
+pair<unsigned, unsigned> StaticTable::getIndex(const Header&) const {
+    // TODO: Implement.
+    return {0, 0};
+}
 
 // static
 const StaticTable HeaderTable::stable_;
@@ -369,16 +380,27 @@ HeaderTable::get(unsigned index) const {
     return index < 62 ? stable_.get(index) : dtable_.get(index);
 }
 
-// TODO: HeaderTable::find()
+// TODO: HeaderTable::getIndex()
 // If the static table has a key match but not a value match,
 // search the dynamic table because it might have a k+v match.
 // Or: Search the dynamic table first and just use its result?
 // Also: Consider maintaining a map of keys to indices, at least for the static
 // table, to aid quick lookups for the find() function.
-// Also: This functionality is only useful for the sending side
-// (encoding headers) and useless for the receiver to maintain,
-// so maybe move it out into a SenderTable class ensuring that it doesn't
-// add cruft and useless work to the decoder side.
+pair<unsigned, unsigned> HeaderTable::getIndex(const Header& header) const {
+    pair<unsigned, unsigned> staticIndex = stable_.getIndex(header);
+    if (staticIndex.second != 0)
+        return staticIndex;
+
+    pair<unsigned, unsigned> dynamicIndex = dtable_.getIndex(header);
+    if (dynamicIndex.second != 0)
+        return dynamicIndex;
+
+    // no value match, look for name-only match, preferring static table
+    if (staticIndex.first != 0)
+        return staticIndex;
+
+    return dynamicIndex;
+}
 
 void RBuf::advance(size_t len) {
     if (__builtin_expect(data_ + len > end_, 0))

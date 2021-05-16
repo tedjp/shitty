@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
+#include <span>
 #include <string_view>
 
 #include "../Transport.h"
@@ -28,6 +30,8 @@ public:
 
     // shitty::Transport overrides
     void onInput(StreamBuf&) override;
+
+    void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
 
     ServerStream* getStream(uint32_t id);
 

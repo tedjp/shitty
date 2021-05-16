@@ -54,7 +54,7 @@ public:
     DynamicTable();
 
     Header get(unsigned index) const;
-    std::pair<unsigned, bool> find(const Header& h) const;
+    std::pair<unsigned, unsigned> getIndex(const Header& h) const;
     void insert(Header&& header);
     void insert(const Header& header);
     void resize(unsigned new_hpack_size);
@@ -63,8 +63,8 @@ public:
 class StaticTable {
 public:
     Header get(unsigned index) const;
-    std::pair<unsigned, bool>
-        find(const Header& h) const;
+    // Find the index of a matching static table entry, or 0 for not found.
+    std::pair<unsigned, unsigned> getIndex(const Header& header) const;
 };
 
 class HeaderTable {
@@ -74,8 +74,7 @@ private:
 
 public:
     Header get(unsigned index) const;
-    std::pair<unsigned, bool>
-        find(const Header& h) const;
+    std::pair<unsigned, unsigned> getIndex(const Header& header) const;
     void insert(const Header& h) { dtable_.insert(h); }
     void resize(unsigned new_hpack_size) { dtable_.resize(new_hpack_size); }
 };

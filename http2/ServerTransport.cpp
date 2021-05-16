@@ -19,6 +19,7 @@ namespace shitty::http2 {
 class ServerTransport::Impl {
 public:
     Impl(
+            ServerTransport* parent,
             Connection* connection,
             const Header& http2Settings,
             const Routes* routes);
@@ -35,11 +36,14 @@ public:
 
     void ackSettings();
 
+    void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
+
 private:
-    Connection* connection_;
+    ServerTransport* parent_ = nullptr;
+    Connection* connection_ = nullptr;
     Settings localSettings_;
     Settings peerSettings_;
-    const Routes* routes_;
+    const Routes* routes_ = nullptr;
 
     // XXX: HPACK symbols ought to be namespaced properly
     HeaderTable hpack_;
@@ -67,11 +71,15 @@ ServerTransport::ServerTransport(
         Connection* connection,
         const Header& http2Settings,
         const Routes* routes):
-    impl_(make_unique<Impl>(connection, http2Settings, routes))
+    impl_(make_unique<Impl>(this, connection, http2Settings, routes))
 {}
 
 void ServerTransport::onInput(StreamBuf& buf) {
     impl_->onInput(buf);
+}
+
+void ServerTransport::writeFrame(FrameHeader frameHeader, std::span<const std::byte> data) {
+    impl_->writeFrame(std::move(frameHeader), data);
 }
 
 ServerStream* ServerTransport::getStream(uint32_t id) {
@@ -82,9 +90,11 @@ ServerTransport::~ServerTransport()
 {}
 
 ServerTransport::Impl::Impl(
+        ServerTransport* parent,
         Connection* connection,
         const Header& http2Settings,
         const Routes* routes):
+    parent_(parent),
     connection_(connection),
     routes_(routes)
 {
@@ -106,7 +116,7 @@ ServerTransport::Impl::Impl(
         peerSettings_ = Settings::createFromBuffer(span(decoded, decodedLen));
     }
 
-    streams_.emplace(1, make_unique<ServerStream>());
+    streams_.emplace(1, make_unique<ServerStream>(1, parent_));
 }
 
 void ServerTransport::Impl::onInput(StreamBuf& buf) {
@@ -260,6 +270,17 @@ void ServerTransport::Impl::ackSettings() {
     Payload payload = connection_->getOutgoingPayload();
 
     writeFrameHeader(header, payload);
+
+    connection_->send(payload);
+}
+
+// Write a frame. The length field will be set to the length of the data.
+void ServerTransport::Impl::writeFrame(FrameHeader frameHeader, std::span<const std::byte> data) {
+    frameHeader.length = data.size();
+
+    Payload payload = connection_->getOutgoingPayload();
+    writeFrameHeader(frameHeader, payload);
+    payload.write(data.data(), data.size());
 
     connection_->send(payload);
 }

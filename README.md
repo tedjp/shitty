@@ -16,6 +16,19 @@ Prints incoming requests.
 
 ## Dependencies
 
+### C++20
+
+A C++20-capable compiler is required. I suggest
+[GCC 11](https://gcc.gnu.org/gcc-11/) or later.
+
+As of early 2021, you might need to install a newer compiler than you
+already have, for example from
+[Debian experimental](https://packages.debian.org/experimental/g++-11) or
+[Ubuntu
+toolchain-r](https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test).
+
+### Included dependencies
+
 [**fb64**](https://github.com/tedjp/fb64) is required for HTTP/2 upgrade.
 
 Clone submodules to ensure it's available:

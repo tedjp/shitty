@@ -16,7 +16,7 @@ fb64:
 hpack:
 	$(MAKE) -j -C dependencies/hpack
 
-CXX = g++ -std=c++20 -pipe -g -Wall -Werror -fmax-errors=1 -O0 -march=native
+CXX = g++-11 -std=c++20 -pipe -g -Wall -Werror -fmax-errors=1 -O0 -march=native
 CPPFLAGS = -Idependencies
 COMPILE_OBJ = $(CXX) $(CPPFLAGS) -c
 

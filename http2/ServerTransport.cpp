@@ -47,7 +47,7 @@ private:
     const Routes* routes_ = nullptr;
 
     // XXX: HPACK symbols ought to be namespaced properly
-    HeaderTable hpack_;
+    HeaderDecoder headerDecoder_;
 
     // unique_ptr indirection here is so that ServerStream
     // pointers/references are not invalidated by other streams being created or

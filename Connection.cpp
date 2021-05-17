@@ -2,6 +2,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <cassert>
+
 #include "Connection.h"
 #include "Error.h"
 #include "http1/ClientTransport.h"
@@ -72,40 +74,34 @@ int Connection::getPollFD() const {
 }
 
 void Connection::onPollIn() {
-    bool read_something = false;
+    assert(transport_ != nullptr);
+    incoming_.grow();
 
-    for (;;) {
-        incoming_.grow();
+    ssize_t read_len = ::read(
+            fd_,
+            incoming_.tail(),
+            incoming_.tailroom());
 
-        ssize_t read_len = ::read(
-                fd_,
-                incoming_.tail(),
-                incoming_.tailroom());
-
-        if (read_len > 0) {
-            read_something = true;
-            incoming_.addTailContent(static_cast<size_t>(read_len));
-        }
-
-        if (read_len == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                break;
-
-            close();
-            return;
-        }
-
-        if (read_len == 0 && !read_something) {
-            close();
-            return;
-        }
+    if (read_len > 0) {
+        incoming_.addTailContent(static_cast<size_t>(read_len));
+        transport_->onInput(incoming_);
+        // edge-triggered; there might be more to read.
+        // tail-recurse.
+        onPollIn();
+        return;
     }
 
-    if (read_something) {
-        if (!transport_)
-            throw std::logic_error("No transport assigned");
+    if (read_len == 0) {
+        close();
+        return;
+    }
 
-        transport_->onInput(incoming_);
+    if (read_len == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return; // fine, poll again.
+
+        close();
+        return;
     }
 }
 

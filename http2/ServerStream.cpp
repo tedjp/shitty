@@ -1,6 +1,8 @@
 #include <array>
 #include <stdexcept>
 
+#include "../Response.h"
+#include "HeadersFrame.h"
 #include "ServerStream.h"
 #include "ServerTransport.h"
 
@@ -18,18 +20,18 @@ ServerStream::ServerStream(uint32_t id, ServerTransport* transport):
 }
 
 void ServerStream::onRequest(Request&& request) {
-    // TODO
+    // TODO.. dispatch to request handler
+    sendResponse(Response(200));
 }
 
 void ServerStream::sendResponse(const Response&) {
-    // XXX: This implementation is a placeholder
-    FrameHeader okHeaders(FrameType::HEADERS);
-    okHeaders.streamId = id_;
+    HeadersFrame headers(id_);
+    // static table (0x80) | ":status = 200" (0x08)
+    headers.setHeaderBlockFragment({std::byte(0x88)});
+    // This completes the response.
+    headers.setEndStream(true);
 
-    // static table ":status = 200".
-    const std::array<const std::byte, 1> headers{std::byte(0x88)};
-
-    transport_->writeFrame(std::move(okHeaders), headers);
+    transport_->writeHeadersFrame(std::move(headers));
 }
 
 } // namespace

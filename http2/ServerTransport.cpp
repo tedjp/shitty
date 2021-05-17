@@ -37,6 +37,7 @@ public:
     void ackSettings();
 
     void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
+    void writeHeadersFrame(const HeadersFrame& frame);
 
 private:
     ServerTransport* parent_ = nullptr;
@@ -62,7 +63,6 @@ private:
     uint32_t windowSize_ = 65535; // RFC 7540 6.9.2
 
     // TODO: Shrink to bits
-    bool prefaceSent_ = false;
     bool prefaceReceived_ = false;
     bool windowUpdateReceived_ = false;
 };
@@ -74,12 +74,20 @@ ServerTransport::ServerTransport(
     impl_(make_unique<Impl>(this, connection, http2Settings, routes))
 {}
 
+void ServerTransport::sendPreface() {
+    impl_->sendPreface();
+}
+
 void ServerTransport::onInput(StreamBuf& buf) {
     impl_->onInput(buf);
 }
 
 void ServerTransport::writeFrame(FrameHeader frameHeader, std::span<const std::byte> data) {
     impl_->writeFrame(std::move(frameHeader), data);
+}
+
+void ServerTransport::writeHeadersFrame(const HeadersFrame& frame) {
+    impl_->writeHeadersFrame(frame);
 }
 
 ServerStream* ServerTransport::getStream(uint32_t id) {
@@ -89,6 +97,22 @@ ServerStream* ServerTransport::getStream(uint32_t id) {
 ServerTransport::~ServerTransport()
 {}
 
+static Settings decodeBase64Settings(std::string_view b64encoded) {
+    char decoded[128];
+    const size_t decodedLen = fb64_decoded_size_nopad(b64encoded.size());
+    if (decodedLen > sizeof(decoded))
+        throw runtime_error("excessive HTTP2-Settings length");
+
+    int decodeResult = fb64_decode(
+            b64encoded.data(),
+            b64encoded.size(),
+            reinterpret_cast<uint8_t*>(decoded));
+    if (decodeResult != 0)
+        throw runtime_error("HTTP2-Settings decode error");
+
+    return Settings::createFromBuffer(span(decoded, decodedLen));
+}
+
 ServerTransport::Impl::Impl(
         ServerTransport* parent,
         Connection* connection,
@@ -96,38 +120,13 @@ ServerTransport::Impl::Impl(
         const Routes* routes):
     parent_(parent),
     connection_(connection),
+    peerSettings_(decodeBase64Settings(http2Settings.second)),
     routes_(routes)
 {
-    // decode settings
-    {
-        string_view settings = http2Settings.second;
-        char decoded[128];
-        const size_t decodedLen = fb64_decoded_size_nopad(settings.size());
-        if (decodedLen > sizeof(decoded))
-            throw runtime_error("excessive HTTP2-Settings length");
-
-        int decodeResult = fb64_decode(
-                settings.data(),
-                settings.size(),
-                reinterpret_cast<uint8_t*>(decoded));
-        if (decodeResult != 0)
-            throw runtime_error("HTTP2-Settings decode error");
-
-        peerSettings_ = Settings::createFromBuffer(span(decoded, decodedLen));
-    }
-
-    streams_.emplace(1, make_unique<ServerStream>(1, parent_));
+    streams_.emplace(1u, make_unique<ServerStream>(1u, parent_));
 }
 
 void ServerTransport::Impl::onInput(StreamBuf& buf) {
-    // FIXME: This should be sent *once* *after* the HTTP/1.1 101 Switching
-    // Protocols response. Sending it in the constructor is too soon (101 hasn't
-    // been sent), and sending it on every input is _obviously_ wrong.
-    // This entire class might need a separate path when constructing from
-    // HTTP/1 upgrade (static constructor that handles the upgrade).
-    if (!prefaceSent_)
-        sendPreface();
-
     if (!prefaceReceived_)
         receivePreface(buf);
 
@@ -146,8 +145,6 @@ ServerStream* ServerTransport::Impl::getStream(uint32_t id) {
 }
 
 void ServerTransport::Impl::sendPreface() {
-    prefaceSent_ = true;
-
     // TODO: Replace with framing and stuff.
     const char settingsFrame[] = {
         0x00, 0x00, 0x00, // length (0)
@@ -269,7 +266,7 @@ void ServerTransport::Impl::ackSettings() {
 
     Payload payload = connection_->getOutgoingPayload();
 
-    writeFrameHeader(header, payload);
+    header.writeTo(payload);
 
     connection_->send(payload);
 }
@@ -279,9 +276,18 @@ void ServerTransport::Impl::writeFrame(FrameHeader frameHeader, std::span<const 
     frameHeader.length = data.size();
 
     Payload payload = connection_->getOutgoingPayload();
-    writeFrameHeader(frameHeader, payload);
+    frameHeader.writeTo(payload);
     payload.write(data.data(), data.size());
 
+    connection_->send(payload);
+}
+
+void ServerTransport::Impl::writeHeadersFrame(const HeadersFrame& frame) {
+    Payload payload = connection_->getOutgoingPayload();
+
+    frame.frameHeader().writeTo(payload);
+    payload.write(frame.headerBlockFragment());
+    payload.write(frame.padding());
     connection_->send(payload);
 }
 

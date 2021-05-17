@@ -7,6 +7,7 @@
 
 #include "../Transport.h"
 #include "Frame.h"
+#include "HeadersFrame.h"
 #include "ServerStream.h"
 
 namespace shitty {
@@ -28,10 +29,13 @@ public:
             const Routes* routes);
     ~ServerTransport();
 
+    void sendPreface();
+
     // shitty::Transport overrides
     void onInput(StreamBuf&) override;
 
     void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
+    void writeHeadersFrame(const HeadersFrame& frame);
 
     ServerStream* getStream(uint32_t id);
 

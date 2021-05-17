@@ -56,6 +56,10 @@ inline void Payload::write(const std::string& str) {
     write(str.data(), str.size());
 }
 
+inline void Payload::write(std::span<const std::byte> data) {
+    write(data.data(), data.size());
+}
+
 inline void Payload::writeOctet(uint8_t octet) {
     write(&octet, 1);
 }

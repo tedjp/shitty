@@ -1,4 +1,3 @@
-#include <arpa/inet.h>
 #include <cassert>
 #include <stdexcept>
 
@@ -8,17 +7,21 @@
 
 namespace shitty::http2 {
 
-// XXX: This ought to be inlined and ideally a single write of a packed
-// structure.
-void writeFrameHeader(const FrameHeader& frameHeader, Payload& out) {
-    out.writeOctet(static_cast<uint8_t>(frameHeader.length >> 16));
-    out.writeOctet(static_cast<uint8_t>(frameHeader.length >>  8));
-    out.writeOctet(static_cast<uint8_t>(frameHeader.length >>  0));
-    out.writeOctet(static_cast<uint8_t>(frameHeader.type));
-    out.writeOctet(static_cast<uint8_t>(frameHeader.flags.to_ulong()));
-    uint32_t nboReservedStreamId = htonl(
-            (frameHeader.reserved << 31) | frameHeader.streamId);
-    out.write(&nboReservedStreamId, sizeof(nboReservedStreamId));
+void FrameHeader::writeTo(Payload& out) const {
+    std::array<std::byte, SIZE> bytes = {};
+    uint32_t reservedAndStreamId = (static_cast<uint32_t>(reserved) << 31) | streamId;
+
+    bytes[0] = static_cast<std::byte>(length >> 16);
+    bytes[1] = static_cast<std::byte>(length >>  8);
+    bytes[2] = static_cast<std::byte>(length >>  0);
+    bytes[3] = static_cast<std::byte>(type);
+    bytes[4] = static_cast<std::byte>(flags.to_ulong());
+    bytes[5] = static_cast<std::byte>(reservedAndStreamId >> 24);
+    bytes[6] = static_cast<std::byte>(reservedAndStreamId >> 16);
+    bytes[7] = static_cast<std::byte>(reservedAndStreamId >>  8);
+    bytes[8] = static_cast<std::byte>(reservedAndStreamId >>  0);
+
+    out.write(bytes.data(), bytes.size());
 }
 
 std::optional<FrameHeader> tryReadFrameHeader(StreamBuf& input) {

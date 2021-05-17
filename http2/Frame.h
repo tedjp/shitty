@@ -33,14 +33,14 @@ struct FrameHeader {
     std::bitset<8> flags;
     unsigned reserved : 1 = 0;
     uint32_t streamId : 31 = 0;
+
+    void writeTo(Payload& payload) const;
 };
 
 // input *must* have at least FrameHeader::SIZE (9) octets available
 FrameHeader readFrameHeader(StreamBuf& input);
 // FrameHeader, or nullopt if not enough data available
 std::optional<FrameHeader> tryReadFrameHeader(StreamBuf& input);
-
-void writeFrameHeader(const FrameHeader& frameHeader, Payload& payload);
 
 // Convenience predicates for various standard frame types
 // Don't worry about frame-type check duplication -- it'll optimize away.

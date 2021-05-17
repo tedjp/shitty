@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <span>
 #include <string>
 
 #include "StreamBuf.h"
@@ -49,6 +50,7 @@ public:
     void write(const std::string& str);
     void send(const std::string& str);
     void write(const void *buf, size_t len);
+    void write(std::span<const std::byte> data);
     void writeOctet(uint8_t octet);
     void send(const void *buf, size_t len);
     const void *data() const;

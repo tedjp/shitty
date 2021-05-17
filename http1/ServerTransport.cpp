@@ -89,6 +89,7 @@ void ServerTransport::upgrade(
     http2::ServerTransport* h2Transport = dynamic_cast<http2::ServerTransport*>(
             connection->getTransport());
     assert(h2Transport != nullptr);
+    h2Transport->sendPreface();
     // The upgraded incoming request becomes stream 1.
     http2::ServerStream* stream = h2Transport->getStream(1);
     assert(stream != nullptr);

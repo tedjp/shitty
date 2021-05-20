@@ -31,7 +31,10 @@ public:
     void sendPreface();
     void receivePreface(StreamBuf& buf);
 
-// TODO: Make all these private
+    void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
+    void writeHeadersFrame(const HeadersFrame& frame);
+
+private:
     void receiveFrames(StreamBuf& buf);
     bool receiveFrame(StreamBuf& buf);
 
@@ -39,12 +42,8 @@ public:
 
     void ackSettings();
 
-    void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
-    void writeHeadersFrame(const HeadersFrame& frame);
-
     void receiveHeaders(StreamBuf& buf);
 
-private:
     void processFrameBody(StreamBuf& buf);
     void endStream(uint32_t streamId);
 
@@ -66,7 +65,6 @@ private:
     // has_value when an entire frame header has been read, but the body has not
     // been completely processed.
     std::optional<FrameHeader> currentFrameHeader_;
-    std::vector<uint8_t> currentframeBody_;
 
     // connection window size
     uint32_t windowSize_ = 65535; // RFC 7540 6.9.2

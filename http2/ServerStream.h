@@ -21,6 +21,9 @@ public:
 
     void addWindowSize(int32_t windowSize);
 
+    // TODO: interface this
+    Headers headers_;
+
 private:
     uint32_t id_ = 0;
     // XXX: Hold a pointer to the Impl instead to avoid an indirection

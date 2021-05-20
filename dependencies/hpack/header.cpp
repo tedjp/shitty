@@ -402,39 +402,27 @@ pair<unsigned, unsigned> HeaderTable::getIndex(const Header& header) const {
     return dynamicIndex;
 }
 
-void RBuf::advance(size_t len) {
-    if (__builtin_expect(data_ + len > end_, 0))
-        throw std::runtime_error("Cannot advance beyond end of buffer");
-
-    data_ += len;
-}
-
-RBuf& RBuf::operator+=(size_t len) {
-    advance(len);
-    return *this;
-}
-
-Header HeaderDecoder::decode_indexed(RBuf& buf) {
+Header HeaderDecoder::decode_indexed(std::span<const std::byte>& buf) {
     uintmax_t idx = 0;
-    ssize_t len = decode_number(buf.data(), buf.size(), 7, &idx);
+    ssize_t len = decode_number(reinterpret_cast<const uint8_t*>(buf.data()), buf.size(), 7, &idx);
     if (len < 1)
         throw std::runtime_error("Failed to decode indexed header");
 
-    buf.advance(len);
+    buf = buf.subspan(len);
 
     return table_.get(idx);
 }
 
 static pair<string, string>
-decode_raw_string_from_rbuf(RBuf& buf) {
+decode_raw_string_from_rbuf(std::span<const std::byte>& buf) {
     uintmax_t slen = 0;
-    ssize_t bufsz = decode_number(buf.data(), buf.size(), 7, &slen);
+    ssize_t bufsz = decode_number(reinterpret_cast<const uint8_t*>(buf.data()), buf.size(), 7, &slen);
     if (bufsz < 1)
         throw std::runtime_error("String length decode failure");
 
     string encoded(reinterpret_cast<const char*>(buf.data()), bufsz);
 
-    buf.advance(bufsz);
+    buf = buf.subspan(bufsz);
 
     if (slen > buf.size())
         throw std::runtime_error("String prefix longer than buffer");
@@ -443,20 +431,20 @@ decode_raw_string_from_rbuf(RBuf& buf) {
 
     string s(reinterpret_cast<const char*>(buf.data()), slen);
 
-    buf.advance(slen);
+    buf = buf.subspan(slen);
 
     return std::make_pair(s, encoded);
 }
 
 static pair<string, string>
-decode_huff_string_from_rbuf(RBuf& buf) {
+decode_huff_string_from_rbuf(std::span<const std::byte>& buf) {
     uintmax_t coded_len = 0;
-    ssize_t bufsz = decode_number(buf.data(), buf.size(), 7, &coded_len);
+    ssize_t bufsz = decode_number(reinterpret_cast<const uint8_t*>(buf.data()), buf.size(), 7, &coded_len);
     if (bufsz < 1)
         throw std::runtime_error("Huffman-coded string length decode failure");
 
     string encoded(reinterpret_cast<const char *>(buf.data()), bufsz);
-    buf.advance(bufsz);
+    buf = buf.subspan(bufsz);
 
     if (coded_len > buf.size())
         throw std::runtime_error("Huffman-coded string length longer than buffer");
@@ -471,13 +459,13 @@ decode_huff_string_from_rbuf(RBuf& buf) {
     // was used (since it uses length-prefixing), it returns the amount of
     // output buffer used.
     decoded_len = huffman_decode(
-            buf.data(),
+            reinterpret_cast<const uint8_t*>(buf.data()),
             coded_len,
             8,
             reinterpret_cast<uint8_t*>(&s[0]),
             s.size());
 
-    buf.advance(coded_len);
+    buf = buf.subspan(coded_len);
 
     // XXX: overflow check before cast.
     assert(decoded_len <= static_cast<ssize_t>(s.size()));
@@ -488,17 +476,17 @@ decode_huff_string_from_rbuf(RBuf& buf) {
 }
 
 static pair<string, string>
-decode_string_from_rbuf(RBuf& buf) {
+decode_string_from_rbuf(std::span<const std::byte>& buf) {
     if (buf.empty())
         throw std::runtime_error("End of buffer decoding string");
 
-    return (*buf & 0x80)
+    return (static_cast<uint8_t>(buf[0]) & 0x80)
         ? decode_huff_string_from_rbuf(buf)
         : decode_raw_string_from_rbuf(buf);
 }
 
 // A header with an indexed name and literal value.
-Header HeaderDecoder::decode_literal_indexed(unsigned index, RBuf& buf) {
+Header HeaderDecoder::decode_literal_indexed(unsigned index, std::span<const std::byte>& buf) {
     Header h = table_.get(index);
     pair<string, string> value = decode_string_from_rbuf(buf);
     h.value(value.first, value.second);
@@ -506,14 +494,14 @@ Header HeaderDecoder::decode_literal_indexed(unsigned index, RBuf& buf) {
 }
 
 Header
-HeaderDecoder::decode_literal(RBuf& buf, uint_fast8_t length_bits) {
+HeaderDecoder::decode_literal(std::span<const std::byte>& buf, uint_fast8_t length_bits) {
     uintmax_t idx = 0;
-    ssize_t len = decode_number(buf.data(), buf.size(), length_bits, &idx);
+    ssize_t len = decode_number(reinterpret_cast<const uint8_t*>(buf.data()), buf.size(), length_bits, &idx);
 
     if (len < 1)
         throw std::runtime_error("Failed to decode literal incremental header");
 
-    buf.advance(len);
+    buf = buf.subspan(len);
 
     if (idx)
         return decode_literal_indexed(idx, buf);
@@ -528,51 +516,53 @@ HeaderDecoder::decode_literal(RBuf& buf, uint_fast8_t length_bits) {
             std::move(name.second), std::move(value.second));
 }
 
-Header HeaderDecoder::decode_literal_incremental(RBuf& buf) {
+Header HeaderDecoder::decode_literal_incremental(std::span<const std::byte>& buf) {
     Header h(decode_literal(buf, 6));
     table_.insert(h);
     return h;
 }
 
 void
-HeaderDecoder::dynamic_table_resize(RBuf& buf) {
-    if (buf.empty() || (*buf & 0x02) != 0x02)
+HeaderDecoder::dynamic_table_resize(std::span<const std::byte>& buf) {
+    if (buf.empty() || (static_cast<uint8_t>(buf[0]) & 0x02) != 0x02)
         throw std::logic_error("Not a dynamic table size update message");
 
     uintmax_t new_size = 0;
-    ssize_t len = decode_number(buf.data(), buf.size(), 5, &new_size);
+    ssize_t len = decode_number(reinterpret_cast<const uint8_t*>(buf.data()), buf.size(), 5, &new_size);
     if (len < 1)
         throw std::runtime_error("Error decoding buffer resize message");
 
-    buf.advance(len);
+    buf = buf.subspan(len);
 
     table_.resize(new_size);
 }
 
 Header
-HeaderDecoder::decode_literal_without_indexing(RBuf& buf) {
+HeaderDecoder::decode_literal_without_indexing(std::span<const std::byte>& buf) {
     return decode_literal(buf, 4);
 }
 
 Header
-HeaderDecoder::decode_literal_never_indexed(RBuf& buf) {
+HeaderDecoder::decode_literal_never_indexed(std::span<const std::byte>& buf) {
     Header h(decode_literal(buf, 4));
     h.never_indexed(true);
     return h;
 }
 
 vector<Header>
-HeaderDecoder::parseHeaders(RBuf& buf) {
+HeaderDecoder::parseHeaders(std::span<const std::byte> buf) {
     vector<Header> headers;
 
     while (!buf.empty()) {
-        if (*buf & 0x80)
+        uint8_t octet = static_cast<uint8_t>(buf[0]);
+
+        if (octet & 0x80)
             headers.emplace_back(decode_indexed(buf));
-        else if (*buf & 0x40)
+        else if (octet & 0x40)
             headers.emplace_back(decode_literal_incremental(buf));
-        else if (*buf & 0x20)
+        else if (octet & 0x20)
             dynamic_table_resize(buf);
-        else if (*buf & 0x10)
+        else if (octet & 0x10)
             headers.emplace_back(decode_literal_never_indexed(buf));
         else
             headers.emplace_back(decode_literal_without_indexing(buf));

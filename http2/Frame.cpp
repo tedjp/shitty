@@ -53,6 +53,8 @@ FrameHeader readFrameHeader(StreamBuf& input) {
     header.reserved = reservedAndStreamId >> 31;
     header.streamId = reservedAndStreamId & 0x7fffffffu;
 
+    input.advance(FrameHeader::SIZE);
+
     return header;
 }
 

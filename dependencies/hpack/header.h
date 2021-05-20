@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <string>
 #include <vector>
 #include <utility>
@@ -79,43 +80,24 @@ public:
     void resize(unsigned new_hpack_size) { dtable_.resize(new_hpack_size); }
 };
 
-// A *non-owning* interface to a contiguous buffer.
-class RBuf {
-private:
-    const uint8_t *data_, *end_;
-public:
-    RBuf(const uint8_t *ptr, size_t size):
-        data_(ptr),
-        end_(ptr + size)
-    {}
-
-    const uint8_t *data() const { return data_; }
-    size_t size() const { return end_ - data_; }
-    bool empty() const { return data_ == end_; }
-
-    void advance(size_t len);
-    RBuf& operator+=(size_t len);
-    uint8_t operator*() const { return data_[0]; }
-};
-
 class HeaderDecoder {
-private:
-    HeaderTable table_;
-
-    std::vector<Header> parseHeaders(RBuf& buf);
+public:
+    std::vector<Header> parseHeaders(std::span<const std::byte> buf);
 
 private:
     // § 6.1
-    Header decode_indexed(RBuf& buf);
+    Header decode_indexed(std::span<const std::byte>& buf);
     // § 6.2.1
-    Header decode_literal_incremental(RBuf& buf);
+    Header decode_literal_incremental(std::span<const std::byte>& buf);
     // Helpers
-    Header decode_literal(RBuf& buf, uint_fast8_t length_bits);
-    Header decode_literal_indexed(unsigned index, RBuf& buf);
+    Header decode_literal(std::span<const std::byte>& buf, uint_fast8_t length_bits);
+    Header decode_literal_indexed(unsigned index, std::span<const std::byte>& buf);
     // § 6.2.2
-    Header decode_literal_without_indexing(RBuf& buf);
+    Header decode_literal_without_indexing(std::span<const std::byte>& buf);
     // § 6.2.3
-    Header decode_literal_never_indexed(RBuf& buf);
+    Header decode_literal_never_indexed(std::span<const std::byte>& buf);
     // § 6.3
-    void dynamic_table_resize(RBuf& buf);
+    void dynamic_table_resize(std::span<const std::byte>& buf);
+
+    HeaderTable table_;
 };

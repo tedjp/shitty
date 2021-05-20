@@ -31,15 +31,23 @@ public:
     void sendPreface();
     void receivePreface(StreamBuf& buf);
 
+// TODO: Make all these private
+    void receiveFrames(StreamBuf& buf);
+    bool receiveFrame(StreamBuf& buf);
+
     void receiveFrameHeader(StreamBuf& buf);
-    void receiveFrameData(StreamBuf& buf);
 
     void ackSettings();
 
     void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
     void writeHeadersFrame(const HeadersFrame& frame);
 
+    void receiveHeaders(StreamBuf& buf);
+
 private:
+    void processFrameBody(StreamBuf& buf);
+    void endStream(uint32_t streamId);
+
     ServerTransport* parent_ = nullptr;
     Connection* connection_ = nullptr;
     Settings localSettings_;
@@ -58,6 +66,7 @@ private:
     // has_value when an entire frame header has been read, but the body has not
     // been completely processed.
     std::optional<FrameHeader> currentFrameHeader_;
+    std::vector<uint8_t> currentframeBody_;
 
     // connection window size
     uint32_t windowSize_ = 65535; // RFC 7540 6.9.2
@@ -130,10 +139,7 @@ void ServerTransport::Impl::onInput(StreamBuf& buf) {
     if (!prefaceReceived_)
         receivePreface(buf);
 
-    if (!currentFrameHeader_.has_value())
-        receiveFrameHeader(buf);
-    else
-        receiveFrameData(buf);
+    receiveFrames(buf);
 }
 
 ServerStream* ServerTransport::Impl::getStream(uint32_t id) {
@@ -173,11 +179,25 @@ void ServerTransport::Impl::receivePreface(StreamBuf& buf) {
 
     buf.advance(sizeof(clientPreface));
 
-    if (!buf.empty()) {
-        // go straight into reading frames (probably settings to begin with, as
-        // is required).
+    receiveFrames(buf);
+}
+
+void ServerTransport::Impl::receiveFrames(StreamBuf& buf) {
+    bool moreToProcess;
+    do {
+        moreToProcess = receiveFrame(buf);
+    } while (moreToProcess && !buf.isEmpty());
+}
+
+bool ServerTransport::Impl::receiveFrame(StreamBuf& buf) {
+    if (!currentFrameHeader_.has_value())
         receiveFrameHeader(buf);
-    }
+    if (!currentFrameHeader_.has_value())
+        return false; // wait for data
+    if (buf.size() < currentFrameHeader_.value().length)
+        return false; // wait for frame body
+    processFrameBody(buf);
+    return true; // maybe another frame to process - call again
 }
 
 void ServerTransport::Impl::receiveFrameHeader(StreamBuf& buf) {
@@ -191,11 +211,9 @@ void ServerTransport::Impl::receiveFrameHeader(StreamBuf& buf) {
 
     if (buf.size() < header.length)
         return; // wait for more data
-
-    receiveFrameData(buf);
 }
 
-void ServerTransport::Impl::receiveFrameData(StreamBuf& buf) {
+void ServerTransport::Impl::processFrameBody(StreamBuf& buf) {
     assert(currentFrameHeader_.has_value());
     const FrameHeader& header = currentFrameHeader_.value();
 
@@ -249,6 +267,10 @@ void ServerTransport::Impl::receiveFrameData(StreamBuf& buf) {
 
         break;
 
+    case FrameType::HEADERS:
+        receiveHeaders(buf);
+        break;
+
     default:
         // ignore
         //std::cerr << "Unhandled frame type " << header.type << '\n';
@@ -289,6 +311,50 @@ void ServerTransport::Impl::writeHeadersFrame(const HeadersFrame& frame) {
     payload.write(frame.headerBlockFragment());
     payload.write(frame.padding());
     connection_->send(payload);
+}
+
+void ServerTransport::Impl::receiveHeaders(StreamBuf& buf) {
+    assert(currentFrameHeader_.has_value());
+    const FrameHeader& frameHeader = currentFrameHeader_.value();
+    assert(buf.size() >= frameHeader.length);
+
+    // XXX: HPACK ::Header is not the same as shitty::Header
+    vector<::Header> headers = headerDecoder_.parseHeaders(
+            span(reinterpret_cast<const std::byte*>(buf.data()), frameHeader.length));
+
+    ServerStream* stream = nullptr;
+
+    auto streamIt = streams_.find(frameHeader.streamId);
+    if (streamIt != streams_.end())
+        stream = streamIt->second.get();
+    else {
+        auto [it, inserted] = streams_.emplace(
+                frameHeader.streamId,
+                make_unique<ServerStream>(frameHeader.streamId, parent_));
+        assert(inserted);
+        stream = it->second.get();
+    }
+
+    assert(stream != nullptr);
+
+    // TODO: Accumulate headers until IsEndHeaders
+    //stream->headers_.add(headers);
+
+    // TODO: Accumulate body until IsEndStream
+    // For now just ignore everything until the EndStream & EndHeaders frame
+    // (and ignore its body too)
+    if (HeadersFrame::isEndHeaders(frameHeader)
+            && HeadersFrame::isEndStream(frameHeader))
+    {
+        // TODO: provide real request to OnRequest method
+        stream->onRequest(Request());
+        // Clean up stream
+        endStream(frameHeader.streamId);
+    }
+}
+
+void ServerTransport::Impl::endStream(uint32_t streamId) {
+    streams_.erase(streamId);
 }
 
 } // namespace

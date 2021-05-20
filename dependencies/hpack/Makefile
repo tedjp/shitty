@@ -11,10 +11,10 @@ libhpack.a: header.o number.o
 		#
 
 number.o: number.c number.h
-	gcc -std=gnu99 -Wall -fPIC -c -o $@ $<
+	gcc -g -std=gnu99 -Wall -fPIC -c -o $@ $<
 
 header.o: header.cpp header.h number.h huffy/decode.h
-	g++ -std=gnu++11 -Wall -Wextra -fPIC -c -o $@ $<
+	g++-11 -g -std=c++20 -Wall -Wextra -fPIC -c -o $@ $<
 
 test: test.c number.o
 	gcc -std=gnu99 -Wall -o $@ $^

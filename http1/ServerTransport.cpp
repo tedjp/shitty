@@ -59,6 +59,8 @@ void ServerTransport::onRequest(Request&& req) {
     request_handler_->onRequest(std::move(req), this);
 }
 
+// Only for handling things that *must* occur at the end of the request headers,
+// even if a message body is present.
 void ServerTransport::onEndOfMessageHeaders(Headers& headers) {
     const Header& expectHeader = headers.get("expect");
     if (expectHeader != no_header) {

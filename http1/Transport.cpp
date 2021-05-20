@@ -30,7 +30,10 @@ void Transport::onInput(StreamBuf& input_buffer) {
     } while (continu && !input_buffer.empty());
 }
 
-// return code is whether we should try to process more input.
+// return code is whether there might be more data in the input buffer that this
+// function should be invoked again to process.
+// It will handle at most one request at a time (to allow for this Transport to
+// be replaced after an individual upgraded request).
 bool Transport::processInput(StreamBuf& input_buffer) {
     if (input_buffer.isEmpty())
         return false;
@@ -40,7 +43,13 @@ bool Transport::processInput(StreamBuf& input_buffer) {
             && !isMessageComplete())
     {
         readBody(input_buffer);
-        return !isMessageComplete();
+
+        if (isMessageComplete()) {
+            handleMessage();
+            return true;
+        }
+
+        return false;
     }
 
     std::optional<std::string> oline = getLine(input_buffer);
@@ -52,12 +61,19 @@ bool Transport::processInput(StreamBuf& input_buffer) {
     if (!incoming_message_.has_value()) {
         message_headers_complete_ = false;
         incoming_message_ = IncomingMessage{std::move(line)};
+        // Call again to read next header line
         return true;
     }
 
     if (line.empty()) {
         markHeadersComplete();
-        return !isMessageComplete();
+
+        if (isMessageComplete()) {
+            handleMessage();
+            return true;
+        }
+
+        return false;
     }
 
     if (line[0] == ' ' || line[0] == '\t') {
@@ -81,23 +97,12 @@ void Transport::readChunked(StreamBuf& input_buf) {
     throw std::runtime_error("Chunked input not yet supported");
 }
 
+// Return whether an entire request was read & handled.
 void Transport::readContent(StreamBuf& input_buf) {
     size_t len = std::max(input_buf.size(), static_cast<size_t>(expected_body_length_));
 
     incoming_message_->message.body().append(std::string(input_buf.data(), len));
     input_buf.advance(len);
-
-    if (expected_body_length_ == static_cast<ssize_t>(incoming_message_->message.body().size()))
-        onEndOfMessage();
-
-    if (!input_buf.empty()) {
-        // more input (a pipelined request)
-        onInput(input_buf);
-    }
-}
-
-void Transport::onEndOfMessage() {
-    handleMessage();
 }
 
 bool Transport::isMessageComplete() {
@@ -113,13 +118,6 @@ void Transport::markHeadersComplete() {
     expected_body_length_ = getContentLength(headers);
 
     onEndOfMessageHeaders(headers);
-
-    if (isMessageComplete()) {
-        handleMessage();
-        return;
-    }
-
-    // Wait for request body.
 }
 
 void Transport::handleMessage() {

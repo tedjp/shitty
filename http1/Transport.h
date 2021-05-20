@@ -36,7 +36,6 @@ private:
     // string_or_view class that seamlessly owns & wraps either one.
     bool isMessageComplete();
     void markHeadersComplete();
-    void onEndOfMessage();
     void headerContinuation(std::string&& line);
     void headerLine(std::string&& line);
     void readBody(StreamBuf& input);

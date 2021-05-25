@@ -44,6 +44,7 @@ private:
 
     // Frame type handlers
     void receiveHeaders(StreamBuf& buf);
+    void receiveSettings(const FrameHeader& header, StreamBuf& buf);
     void receiveWindowUpdate(const FrameHeader& frameHeader, StreamBuf& buf);
 
     void addConnectionWindowSize(int32_t increment);
@@ -225,14 +226,7 @@ void ServerTransport::Impl::processFrameBody(StreamBuf& buf) {
 
     switch (header.type) {
     case FrameType::SETTINGS:
-        if (!IsSettingsACK(header)) {
-            peerSettings_ = Settings::createFromBuffer(span(buf.data(), header.length));
-
-            if (!windowUpdateReceived_)
-                windowSize_ = peerSettings_.value(Settings::InitialWindowSize);
-
-            ackSettings();
-        }
+        receiveSettings(header, buf);
         break;
 
     case FrameType::WINDOW_UPDATE:
@@ -252,6 +246,19 @@ void ServerTransport::Impl::processFrameBody(StreamBuf& buf) {
     buf.advance(header.length);
     // Prepare to read next frame header
     currentFrameHeader_.reset();
+}
+
+void ServerTransport::Impl::receiveSettings(const FrameHeader& header, StreamBuf& buf)
+{
+    if (isSettingsACK(header))
+        return;
+
+    peerSettings_ = Settings::createFromBuffer(span(buf.data(), header.length));
+
+    if (!windowUpdateReceived_)
+        windowSize_ = peerSettings_.value(Settings::InitialWindowSize);
+
+    ackSettings();
 }
 
 void ServerTransport::Impl::ackSettings() {

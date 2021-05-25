@@ -4,6 +4,10 @@
 
 namespace shitty::http2 {
 
+static constexpr bool wouldAddOverflow(int32_t first, int32_t second) {
+    return std::numeric_limits<int32_t>::max() - first < second;
+}
+
 // Add a windowUpdate amount to an existing connection or stream flow window
 // size.
 //
@@ -19,7 +23,7 @@ inline int32_t addWindowSize(int32_t existingWindowSize, int32_t addWindowSize) 
     if (existingWindowSize < 0)
         return existingWindowSize + addWindowSize;
 
-    if (std::numeric_limits<int32_t>::max() - existingWindowSize > addWindowSize)
+    if (wouldAddOverflow(existingWindowSize, addWindowSize))
         throw std::runtime_error("window size overflow");
 
     return existingWindowSize + addWindowSize;

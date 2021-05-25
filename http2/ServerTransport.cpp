@@ -42,7 +42,12 @@ private:
 
     void ackSettings();
 
+    // Frame type handlers
     void receiveHeaders(StreamBuf& buf);
+    void receiveWindowUpdate(const FrameHeader& frameHeader, StreamBuf& buf);
+
+    void addConnectionWindowSize(int32_t increment);
+    void addStreamWindowSize(uint32_t streamId, int32_t increment);
 
     void processFrameBody(StreamBuf& buf);
     void endStream(uint32_t streamId);
@@ -231,38 +236,7 @@ void ServerTransport::Impl::processFrameBody(StreamBuf& buf) {
         break;
 
     case FrameType::WINDOW_UPDATE:
-        if (header.length != 4) // TODO: connection error FRAME_SIZE_ERROR
-            throw runtime_error("WINDOW_UPDATE wrong size");
-
-        {
-            // 1 reserved bit, 31 "Window Size Increment" bits
-            int32_t windowSize = 0;
-            windowSize
-                = buf.data()[0] << 24
-                | buf.data()[1] << 16
-                | buf.data()[2] <<  8
-                | buf.data()[3] <<  0;
-            // ignore reserved bit
-            windowSize &= 0x7fffffff;
-
-            if (header.streamId == 0) {
-                try {
-                    windowSize_ = addWindowSize(windowSize_, windowSize);
-                } catch (std::runtime_error& err) {
-                    // FIXME: This is a connection error (6.9), handle
-                    // accordingly (5.4.1)
-                    throw std::runtime_error(
-                            string("connection error: ") + err.what());
-                }
-
-                windowUpdateReceived_ = true;
-            } else {
-                auto stream = streams_.find(header.streamId);
-                if (stream != streams_.end())
-                    stream->second->addWindowSize(windowSize);
-            }
-        }
-
+        receiveWindowUpdate(header, buf);
         break;
 
     case FrameType::HEADERS:
@@ -349,6 +323,57 @@ void ServerTransport::Impl::receiveHeaders(StreamBuf& buf) {
         // Clean up stream
         endStream(frameHeader.streamId);
     }
+}
+
+static int32_t readWindowSize(StreamBuf& buf) {
+    // 1 reserved bit, 31 "Window Size Increment" bits
+    int32_t windowSize = 0;
+
+    windowSize
+        = buf.data()[0] << 24
+        | buf.data()[1] << 16
+        | buf.data()[2] <<  8
+        | buf.data()[3] <<  0;
+
+    // ignore reserved bit
+    windowSize &= 0x7fffffff;
+
+    return windowSize;
+}
+
+void ServerTransport::Impl::receiveWindowUpdate(
+        const FrameHeader& header,
+        StreamBuf& buf)
+{
+    if (header.length != 4) // TODO: connection error FRAME_SIZE_ERROR
+        throw runtime_error("WINDOW_UPDATE wrong size");
+
+    int32_t windowSize = readWindowSize(buf);
+
+    if (header.streamId == 0)
+        addConnectionWindowSize(windowSize);
+    else
+        addStreamWindowSize(header.streamId, windowSize);
+}
+
+void ServerTransport::Impl::addConnectionWindowSize(int32_t windowSize) {
+    try {
+        windowSize_ = addWindowSize(windowSize_, windowSize);
+    } catch (std::runtime_error& err) {
+        // FIXME: This is a connection error (6.9), handle
+        // accordingly (5.4.1)
+        throw std::runtime_error(
+                string("connection error: ") + err.what());
+    }
+
+    windowUpdateReceived_ = true;
+}
+
+void ServerTransport::Impl::addStreamWindowSize(uint32_t streamId, int32_t windowSize) {
+    auto stream = streams_.find(streamId);
+
+    if (stream != streams_.end())
+        stream->second->addWindowSize(windowSize);
 }
 
 void ServerTransport::Impl::endStream(uint32_t streamId) {

@@ -48,4 +48,8 @@ inline bool isSettingsACK(const FrameHeader& frameHeader) {
     return frameHeader.type == FrameType::SETTINGS && frameHeader.flags.test(0);
 }
 
+inline bool isPingACK(const FrameHeader& frameHeader) {
+    return frameHeader.type == FrameType::PING && frameHeader.flags.test(0);
+}
+
 } // namespace

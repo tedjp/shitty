@@ -44,6 +44,7 @@ private:
 
     // Frame type handlers
     void receiveHeaders(StreamBuf& buf);
+    void receivePing(const FrameHeader& header, StreamBuf& buf);
     void receiveSettings(const FrameHeader& header, StreamBuf& buf);
     void receiveWindowUpdate(const FrameHeader& frameHeader, StreamBuf& buf);
 
@@ -225,16 +226,20 @@ void ServerTransport::Impl::processFrameBody(StreamBuf& buf) {
         return; // wait for data
 
     switch (header.type) {
+    case FrameType::HEADERS:
+        receiveHeaders(buf);
+        break;
+
+    case FrameType::PING:
+        receivePing(header, buf);
+        break;
+
     case FrameType::SETTINGS:
         receiveSettings(header, buf);
         break;
 
     case FrameType::WINDOW_UPDATE:
         receiveWindowUpdate(header, buf);
-        break;
-
-    case FrameType::HEADERS:
-        receiveHeaders(buf);
         break;
 
     default:
@@ -248,7 +253,53 @@ void ServerTransport::Impl::processFrameBody(StreamBuf& buf) {
     currentFrameHeader_.reset();
 }
 
-void ServerTransport::Impl::receiveSettings(const FrameHeader& header, StreamBuf& buf)
+static void sendPingResponse(Connection& connection, span<const char> data) {
+    FrameHeader header(FrameType::PING);
+    header.flags.set(0); // ACK
+    header.length = data.size();
+
+    Payload payload = connection.getOutgoingPayload();
+
+    header.writeTo(payload);
+
+    // Copy the incoming ping buffer back to the sender
+    payload.write(data.data(), data.size());
+
+    connection.send(payload);
+}
+
+void ServerTransport::Impl::receivePing(
+        const FrameHeader& header,
+        StreamBuf& buf)
+{
+    if (isPingACK(header))
+        return;
+
+    constexpr unsigned PAYLOAD_SIZE = 8;
+
+    if (header.streamId != 0) {
+        // Connection error: PROTOCOL_ERROR (RFC 7540 6.7)
+        throw runtime_error(
+                "Non-zero stream ID " + to_string(header.streamId) + " in PING");
+    }
+
+    if (header.length != PAYLOAD_SIZE) {
+        // Connection error: FRAME_SIZE_ERROR (RFC 7540 6.7)
+        throw runtime_error(
+                "Incorrect PING payload size " + to_string(header.length));
+    }
+
+    if (buf.size() < PAYLOAD_SIZE)
+        return; // come again
+
+    sendPingResponse(*connection_, span(buf.data(), PAYLOAD_SIZE));
+
+    buf.advance(PAYLOAD_SIZE);
+}
+
+void ServerTransport::Impl::receiveSettings(
+        const FrameHeader& header,
+        StreamBuf& buf)
 {
     if (isSettingsACK(header))
         return;

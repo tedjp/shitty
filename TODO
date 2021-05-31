@@ -1,3 +1,4 @@
+- Fix error handling to correctly return/handle stream & connection errors.
 - Fix memory leak in StaticRoute (print-requests)
 - Split hpack into its own repo & submodule it in as a dependency like fb64.
 - Remove `Routes*` from `ServerTransport`s.

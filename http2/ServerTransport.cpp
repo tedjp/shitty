@@ -141,6 +141,9 @@ ServerTransport::Impl::Impl(
     peerSettings_(decodeBase64Settings(http2Settings.second)),
     routes_(routes)
 {
+    // Disable PUSH_PROMISE due to no handling.
+    localSettings_[Settings::EnablePush] = 0;
+
     streams_.emplace(1u, make_unique<ServerStream>(1u, parent_));
 }
 

@@ -35,6 +35,8 @@ struct Settings {
 
     uint32_t& value(Name name) { return values_[name - Name::_First]; }
     uint32_t value(Name name) const { return values_[name - Name::_First]; }
+    uint32_t& operator[](Name name) { return values_[name - Name::_First]; }
+    uint32_t operator[](Name name) const { return values_[name - Name::_First]; }
 
     static Settings createFromBuffer(std::span<char> buf);
 

@@ -48,6 +48,7 @@ private:
     void receiveData(const FrameHeader& frameHeader, StreamBuf& buf);
     void receiveHeaders(const FrameHeader& frameHeader, StreamBuf& buf);
     void receivePing(const FrameHeader& header, StreamBuf& buf);
+    void receiveResetStream(const FrameHeader& header, StreamBuf& buf);
     void receiveSettings(const FrameHeader& header, StreamBuf& buf);
     void receiveWindowUpdate(const FrameHeader& frameHeader, StreamBuf& buf);
 
@@ -241,6 +242,10 @@ void ServerTransport::Impl::processFrameBody(StreamBuf& buf) {
         receivePing(header, buf);
         break;
 
+    case FrameType::RST_STREAM:
+        receiveResetStream(header, buf);
+        break;
+
     case FrameType::SETTINGS:
         receiveSettings(header, buf);
         break;
@@ -302,6 +307,28 @@ void ServerTransport::Impl::receivePing(
     sendPingResponse(*connection_, span(buf.data(), PAYLOAD_SIZE));
 
     buf.advance(PAYLOAD_SIZE);
+}
+
+void ServerTransport::Impl::receiveResetStream(
+        const FrameHeader& header,
+        StreamBuf& buf) {
+    if (header.length != 4)
+        throw runtime_error("RST_STREAM wrong size");
+
+    if (header.streamId == 0) // connection error: PROTOCOL_ERROR
+        throw runtime_error("Invalid RST_STREAM stream id 0");
+
+    const uint32_t errorCode
+        = static_cast<uint32_t>(buf.data()[0] << 24)
+        | static_cast<uint32_t>(buf.data()[1] << 16)
+        | static_cast<uint32_t>(buf.data()[2] <<  8)
+        | static_cast<uint32_t>(buf.data()[3] <<  0);
+
+    if (errorCode != 0) {
+        // TODO: Return error to caller (if this is an outgoing stream).
+    }
+
+    streams_.erase(header.streamId);
 }
 
 void ServerTransport::Impl::receiveSettings(

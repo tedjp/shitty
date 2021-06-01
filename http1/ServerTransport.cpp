@@ -93,9 +93,8 @@ void ServerTransport::upgrade(
     assert(h2Transport != nullptr);
     h2Transport->sendPreface();
     // The upgraded incoming request becomes stream 1.
-    http2::ServerStream* stream = h2Transport->getStream(1);
-    assert(stream != nullptr);
-    stream->onRequest(move(request));
+    http2::ServerStream& stream = h2Transport->getStream(1);
+    stream.onRequest(move(request));
 }
 
 bool ServerTransport::tryUpgrade(Request& request) {

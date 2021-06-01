@@ -6,6 +6,7 @@
 #include <hpack/header.h>
 
 #include "../Connection.h"
+#include "DataFrame.h"
 #include "FlowControl.h"
 #include "HeadersFrame.h"
 #include "Settings.h"
@@ -26,7 +27,8 @@ public:
 
     void onInput(StreamBuf& buf);
 
-    ServerStream* getStream(uint32_t id);
+    // Get a ServerStream. Throw if it doesn't exist.
+    ServerStream& getStream(uint32_t id);
 
     void sendPreface();
     void receivePreface(StreamBuf& buf);
@@ -43,7 +45,8 @@ private:
     void ackSettings();
 
     // Frame type handlers
-    void receiveHeaders(StreamBuf& buf);
+    void receiveData(const FrameHeader& frameHeader, StreamBuf& buf);
+    void receiveHeaders(const FrameHeader& frameHeader, StreamBuf& buf);
     void receivePing(const FrameHeader& header, StreamBuf& buf);
     void receiveSettings(const FrameHeader& header, StreamBuf& buf);
     void receiveWindowUpdate(const FrameHeader& frameHeader, StreamBuf& buf);
@@ -104,7 +107,7 @@ void ServerTransport::writeHeadersFrame(const HeadersFrame& frame) {
     impl_->writeHeadersFrame(frame);
 }
 
-ServerStream* ServerTransport::getStream(uint32_t id) {
+ServerStream& ServerTransport::getStream(uint32_t id) {
     return impl_->getStream(id);
 }
 
@@ -147,12 +150,12 @@ void ServerTransport::Impl::onInput(StreamBuf& buf) {
     receiveFrames(buf);
 }
 
-ServerStream* ServerTransport::Impl::getStream(uint32_t id) {
+ServerStream& ServerTransport::Impl::getStream(uint32_t id) {
     auto it = streams_.find(id);
     if (it != streams_.end())
-        return it->second.get();
+        return *it->second.get();
 
-    return nullptr;
+    throw runtime_error("No such stream");
 }
 
 void ServerTransport::Impl::sendPreface() {
@@ -226,8 +229,12 @@ void ServerTransport::Impl::processFrameBody(StreamBuf& buf) {
         return; // wait for data
 
     switch (header.type) {
+    case FrameType::DATA:
+        receiveData(header, buf);
+        break;
+
     case FrameType::HEADERS:
-        receiveHeaders(buf);
+        receiveHeaders(header, buf);
         break;
 
     case FrameType::PING:
@@ -343,9 +350,49 @@ void ServerTransport::Impl::writeHeadersFrame(const HeadersFrame& frame) {
     connection_->send(payload);
 }
 
-void ServerTransport::Impl::receiveHeaders(StreamBuf& buf) {
-    assert(currentFrameHeader_.has_value());
-    const FrameHeader& frameHeader = currentFrameHeader_.value();
+void ServerTransport::Impl::receiveData(
+        const FrameHeader& frameHeader,
+        StreamBuf& buf) {
+    if (frameHeader.streamId == 0)
+        throw runtime_error("connection_error PROTOCOL_ERROR");
+
+    ServerStream& stream = getStream(frameHeader.streamId);
+
+    // Check state is Open or half-closed (local)
+    if (stream.getState() != StreamState::Open
+            && stream.getState() != StreamState::HalfClosedLocal)
+        throw runtime_error("stream_error STREAM_CLOSED");
+
+    // TODO: Handle exception as stream error (spec does not specify)
+    stream.subtractWindowSize(frameHeader.length);
+
+    const bool padded = DataFrame::isPadded(frameHeader);
+    uint32_t length = frameHeader.length;
+
+    if (padded) {
+        if (length == 0 || buf.empty()) // connection error, protocol error (not specified)
+            throw runtime_error("Empty padded data frame");
+
+        char charPadLength = buf.data()[0];
+        buf.advance(1);
+
+        uint8_t padLength = static_cast<uint8_t>(charPadLength);
+
+        if (length < padLength) // connection error, protocol error (not specified)
+            throw runtime_error("Padding length exceeds DATA frame size");
+
+        length -= padLength;
+    }
+
+    // TODO: Handle actual data
+
+    if (DataFrame::isEndStream(frameHeader))
+        ; // TODO: dispatch request to request handler
+}
+
+void ServerTransport::Impl::receiveHeaders(
+        const FrameHeader& frameHeader,
+        StreamBuf& buf) {
     assert(buf.size() >= frameHeader.length);
 
     // XXX: HPACK ::Header is not the same as shitty::Header

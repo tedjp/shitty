@@ -37,7 +37,7 @@ public:
     void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
     void writeHeadersFrame(const HeadersFrame& frame);
 
-    ServerStream* getStream(uint32_t id);
+    ServerStream& getStream(uint32_t id);
 
 private:
     class Impl;

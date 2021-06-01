@@ -10,6 +10,16 @@ namespace shitty::http2 {
 
 class ServerTransport;
 
+enum class StreamState {
+    Idle,
+    ReservedLocal,
+    ReservedRemote,
+    Open,
+    HalfClosedLocal,
+    HalfClosedRemote,
+    Closed,
+};
+
 class ServerStream: public shitty::ServerStream {
 public:
     ServerStream(
@@ -19,7 +29,13 @@ public:
     void onRequest(Request&&) override;
     void sendResponse(const Response&) override;
 
+    StreamState getState() const;
+    void setState(StreamState);
+
     void addWindowSize(int32_t windowSize);
+    void subtractWindowSize(uint32_t adjustment);
+
+    int32_t availableWindowSize() const;
 
     // TODO: interface this
     Headers headers_;
@@ -31,7 +47,17 @@ private:
 
     // initial value from RFC 7540 6.5.2.
     int32_t windowSize_ = 65535;
+
+    StreamState state_ = StreamState::Idle;
 };
+
+inline StreamState ServerStream::getState() const {
+    return state_;
+}
+
+inline void ServerStream::setState(StreamState state) {
+    state_ = state;
+}
 
 inline void ServerStream::addWindowSize(int32_t windowSize) {
     try {
@@ -41,6 +67,21 @@ inline void ServerStream::addWindowSize(int32_t windowSize) {
         // that should trigger a RST_STREAM.
         throw std::runtime_error(std::string("stream error: ") + err.what());
     }
+}
+
+inline void ServerStream::subtractWindowSize(uint32_t adjustment) {
+    static_assert(std::is_same_v<decltype(windowSize_), int32_t>);
+
+    // Negative window size is OK, but overflow is not.
+    if ((windowSize_ < 0 && adjustment > abs(windowSize_))
+        || adjustment > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error("window size reduction too large");
+
+    windowSize_ -= static_cast<int32_t>(adjustment);
+}
+
+inline int32_t ServerStream::availableWindowSize() const {
+    return windowSize_;
 }
 
 } // namespace

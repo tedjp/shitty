@@ -416,8 +416,11 @@ void ServerTransport::Impl::receiveData(
 
     // TODO: Handle actual data
 
-    if (DataFrame::isEndStream(frameHeader))
-        ; // TODO: dispatch request to request handler
+    if (DataFrame::isEndStream(frameHeader)) {
+        // TODO: Accumulate request & headers and pass to handler
+        stream.onRequest(Request());
+        endStream(frameHeader.streamId);
+    }
 }
 
 void ServerTransport::Impl::receiveHeaders(

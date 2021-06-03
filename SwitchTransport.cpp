@@ -16,13 +16,25 @@ SwitchTransport::SwitchTransport(Connection* connection):
 void SwitchTransport::onInput(StreamBuf& buf) {
     using http2::protocol::CLIENT_PREFACE;
 
-    if (buf.size() < CLIENT_PREFACE.size())
-        return; // wait for more
+    // Permit short requests like "GET / HTTP/1.1\r\n\r\n" that are shorter
+    // than the HTTP/2 client preface. As soon as a request like that is
+    // received, it should switch to HTTP/1 handling.
+    bool maybeHTTP2 = true;
+    bool definitelyHTTP2 = false;
 
-    const bool isHttp2 = memcmp(
-            buf.data(),
-            CLIENT_PREFACE.data(),
-            CLIENT_PREFACE.size()) == 0;
+    if (buf.size() < CLIENT_PREFACE.size()) {
+        maybeHTTP2 = memcmp(buf.data(), CLIENT_PREFACE.data(), buf.size()) == 0;
+    } else {
+        definitelyHTTP2 = memcmp(
+                buf.data(),
+                CLIENT_PREFACE.data(),
+                CLIENT_PREFACE.size()) == 0;
+    }
+
+    if (maybeHTTP2 && !definitelyHTTP2) {
+        // Not sure yet; wait for more input
+        return;
+    }
 
     // `this` will be destroyed in the middle of this function, so grab a
     // frame-local copy of the connection pointer.
@@ -31,7 +43,7 @@ void SwitchTransport::onInput(StreamBuf& buf) {
 
     unique_ptr<Transport> transport;
 
-    if (isHttp2)
+    if (definitelyHTTP2)
         transport = make_unique<http2::ServerTransport>(connection);
     else
         transport = make_unique<http1::ServerTransport>(connection);

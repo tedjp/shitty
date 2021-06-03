@@ -15,6 +15,8 @@ public:
             Connection* connection,
             const Routes* routes);
 
+    ServerTransport(Connection* connection);
+
     // from shitty::ServerStream
     void onRequest(Request&&) override;
     void sendResponse(const Response&) override;
@@ -26,6 +28,7 @@ protected:
 
 private:
     bool tryUpgrade(Request& request);
+    void confirmUpgrade(const std::string& token);
     void upgrade(
             const std::string& token,
             std::unique_ptr<shitty::Transport>&& newTransport,
@@ -33,7 +36,7 @@ private:
 
     virtual void handleExpect(const std::string& value);
 
-    const Routes* routes_;
+    const Routes* routes_ = nullptr;
     std::unique_ptr<RequestHandler> request_handler_;
 };
 

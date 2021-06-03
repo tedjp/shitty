@@ -35,6 +35,10 @@ ServerTransport::ServerTransport(
 {
 }
 
+ServerTransport::ServerTransport(Connection* connection):
+    shitty::http1::Transport(connection)
+{}
+
 void ServerTransport::sendResponse(const Response& resp) {
     sendMessage(statusLine(resp), resp.message);
     request_handler_ = nullptr;
@@ -49,7 +53,8 @@ void ServerTransport::onRequest(Request&& req) {
     if (tryUpgrade(req))
         return;
 
-    request_handler_ = routes_->getHandler(req);
+    if (routes_ != nullptr)
+        request_handler_ = routes_->getHandler(req);
 
     if (!request_handler_) {
         sendResponse(Response(404, "No handler"));
@@ -77,21 +82,12 @@ void ServerTransport::upgrade(
         Request&& request) {
     assert(newTransport != nullptr);
 
-    {
-        Headers headers;
-        headers.add("Connection", "Upgrade");
-        headers.set("Upgrade", token);
-        // 101 Switching Protocols
-        sendHeaders(statusLine(101), move(headers));
-    }
-
     Connection* connection = getConnection();
     connection->setTransport(move(newTransport));
     // `this` has been destroyed, but this stack frame still exists
     http2::ServerTransport* h2Transport = dynamic_cast<http2::ServerTransport*>(
             connection->getTransport());
     assert(h2Transport != nullptr);
-    h2Transport->sendPreface();
     // The upgraded incoming request becomes stream 1.
     http2::ServerStream& stream = h2Transport->getStream(1);
     stream.onRequest(move(request));
@@ -114,10 +110,16 @@ bool ServerTransport::tryUpgrade(Request& request) {
     if (!upgrader)
         return false;
 
+    confirmUpgrade(token);
+
     unique_ptr<shitty::Transport> transport = upgrader->upgrade(this, request);
 
-    if (!transport)
-        return false;
+    assert(transport != nullptr);
+    if (transport == nullptr) {
+        // ought to close the connection; upgrade confirmation has already been
+        // sent.
+        throw runtime_error("internal error: new transport failed");
+    }
 
     // Delete the Upgrade header to avoid multiple upgrades.
     // XXX: Delete "Upgrade" from the "Connection" header too for completeness.
@@ -127,6 +129,16 @@ bool ServerTransport::tryUpgrade(Request& request) {
     // `this` transport has been destroyed.
 
     return true;
+}
+
+// Indicate to the client that upgrade is confirmed and in progress. Sends
+// HTTP/1.1 101 Switching Protocols.
+void ServerTransport::confirmUpgrade(const string& token) {
+    Headers headers;
+    headers.add("Connection", "Upgrade");
+    headers.set("Upgrade", token);
+    // 101 Switching Protocols
+    sendHeaders(statusLine(101), move(headers));
 }
 
 // This SHALL be overridden by proxies, which, for HTTP/1.1 and later clients,

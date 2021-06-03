@@ -55,6 +55,7 @@ OBJS = \
 	   StaticResponder.o \
 	   StatusStrings.o \
 	   StreamBuf.o \
+	   SwitchTransport.o \
 	   UnhandledRequestHandler.o \
 	   #
 

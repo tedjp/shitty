@@ -27,9 +27,8 @@ public:
             Connection* connection,
             const Header& http2Settings,
             const Routes* routes);
+    ServerTransport(Connection* connection);
     ~ServerTransport();
-
-    void sendPreface();
 
     // shitty::Transport overrides
     void onInput(StreamBuf&) override;

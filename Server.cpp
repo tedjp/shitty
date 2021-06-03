@@ -14,7 +14,7 @@
 #include "EventReceiver.h"
 #include "Server.h"
 #include "SignalReceiver.h"
-#include "http1/ServerTransport.h"
+#include "SwitchTransport.h"
 
 namespace shitty {
 
@@ -224,9 +224,7 @@ bool Server::Impl::accept() {
 
     auto connection = std::make_unique<Connection>(epfd_, client_fd);
     connection->setConnectionManager(this);
-    connection->setTransport(std::make_unique<http1::ServerTransport>(
-                connection.get(),
-                &server_->routes_));
+    connection->setTransport(std::make_unique<SwitchTransport>(connection.get()));
 
     auto [iter, inserted] = clients_.try_emplace(client_fd, std::move(connection));
 

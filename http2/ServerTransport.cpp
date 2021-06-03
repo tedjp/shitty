@@ -9,6 +9,7 @@
 #include "DataFrame.h"
 #include "FlowControl.h"
 #include "HeadersFrame.h"
+#include "Protocol.h"
 #include "Settings.h"
 #include "ServerStream.h"
 #include "ServerTransport.h"
@@ -25,18 +26,22 @@ public:
             const Header& http2Settings,
             const Routes* routes);
 
+    Impl(ServerTransport* parent, Connection* connection);
+
     void onInput(StreamBuf& buf);
 
     // Get a ServerStream. Throw if it doesn't exist.
     ServerStream& getStream(uint32_t id);
 
-    void sendPreface();
-    void receivePreface(StreamBuf& buf);
-
     void writeFrame(FrameHeader frameHeader, std::span<const std::byte> data);
     void writeHeadersFrame(const HeadersFrame& frame);
 
 private:
+    void initialize();
+
+    void sendPreface();
+    void receivePreface(StreamBuf& buf);
+
     void receiveFrames(StreamBuf& buf);
     bool receiveFrame(StreamBuf& buf);
 
@@ -92,9 +97,9 @@ ServerTransport::ServerTransport(
     impl_(make_unique<Impl>(this, connection, http2Settings, routes))
 {}
 
-void ServerTransport::sendPreface() {
-    impl_->sendPreface();
-}
+ServerTransport::ServerTransport(Connection* connection):
+    impl_(make_unique<Impl>(this, connection))
+{}
 
 void ServerTransport::onInput(StreamBuf& buf) {
     impl_->onInput(buf);
@@ -141,10 +146,23 @@ ServerTransport::Impl::Impl(
     peerSettings_(decodeBase64Settings(http2Settings.second)),
     routes_(routes)
 {
+    initialize();
+}
+
+ServerTransport::Impl::Impl(ServerTransport* parent, Connection* connection):
+    parent_(parent),
+    connection_(connection)
+{
+    initialize();
+}
+
+void ServerTransport::Impl::initialize() {
     // Disable PUSH_PROMISE due to no handling.
     localSettings_[Settings::EnablePush] = 0;
 
     streams_.emplace(1u, make_unique<ServerStream>(1u, parent_));
+
+    sendPreface();
 }
 
 void ServerTransport::Impl::onInput(StreamBuf& buf) {
@@ -175,21 +193,17 @@ void ServerTransport::Impl::sendPreface() {
 }
 
 void ServerTransport::Impl::receivePreface(StreamBuf& buf) {
-    static constexpr uint8_t clientPreface[24]
-        = {
-            0x50, 0x52, 0x49, 0x20,  0x2a, 0x20, 0x48, 0x54,
-            0x54, 0x50, 0x2f, 0x32,  0x2e, 0x30, 0x0d, 0x0a,
-            0x0d, 0x0a, 0x53, 0x4d,  0x0d, 0x0a, 0x0d, 0x0a };
+    using protocol::CLIENT_PREFACE;
 
-    if (buf.size() < sizeof(clientPreface))
+    if (buf.size() < CLIENT_PREFACE.size())
         return; // come back later
 
-    if (memcmp(buf.data(), clientPreface, sizeof(clientPreface)) != 0)
+    if (memcmp(buf.data(), CLIENT_PREFACE.data(), CLIENT_PREFACE.size()) != 0)
         throw std::runtime_error("Invalid connection preface"); // connection error
 
     prefaceReceived_ = true;
 
-    buf.advance(sizeof(clientPreface));
+    buf.advance(CLIENT_PREFACE.size());
 
     receiveFrames(buf);
 }

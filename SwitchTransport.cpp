@@ -24,16 +24,14 @@ void SwitchTransport::onInput(StreamBuf& buf) {
 
     if (buf.size() < CLIENT_PREFACE.size()) {
         maybeHTTP2 = memcmp(buf.data(), CLIENT_PREFACE.data(), buf.size()) == 0;
+
+        if (maybeHTTP2)
+            return; // wait for more data to be sure
     } else {
         definitelyHTTP2 = memcmp(
                 buf.data(),
                 CLIENT_PREFACE.data(),
                 CLIENT_PREFACE.size()) == 0;
-    }
-
-    if (maybeHTTP2 && !definitelyHTTP2) {
-        // Not sure yet; wait for more input
-        return;
     }
 
     // `this` will be destroyed in the middle of this function, so grab a

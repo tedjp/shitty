@@ -89,4 +89,15 @@ check:
 	$(MAKE) -C dependencies/fb64 check
 	$(MAKE) -C dependencies/hpack check
 
-.PHONY: all check clean depend fb64 hpack
+verify: verify.sh
+	./verify.sh
+
+.PHONY: \
+	all \
+	check \
+	clean \
+	depend \
+	fb64 \
+	hpack \
+	verify \
+	#

@@ -11,3 +11,5 @@ curl -v --http2-prior-knowledge http://localhost/
 
 # Short HTTP1 request
 echo -en "GET / HTTP/1.1\r\n\r\n" | nc -v localhost 80
+
+echo OK

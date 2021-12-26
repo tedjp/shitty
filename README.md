@@ -19,7 +19,7 @@ Prints incoming requests.
 ### C++20
 
 A C++20-capable compiler is required. I suggest
-[GCC 11](https://gcc.gnu.org/gcc-11/) or later.
+[GCC 10](https://gcc.gnu.org/gcc-10/) or later.
 
 As of early 2021, you might need to install a newer compiler than you
 already have, for example from

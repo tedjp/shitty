@@ -7,7 +7,6 @@
 
 #include "../Connection.h"
 #include "DataFrame.h"
-#include "FlowControl.h"
 #include "HeadersFrame.h"
 #include "Protocol.h"
 #include "Settings.h"
@@ -479,18 +478,18 @@ void ServerTransport::Impl::receiveHeaders(
 
 static int32_t readWindowSize(StreamBuf& buf) {
     // 1 reserved bit, 31 "Window Size Increment" bits
-    int32_t windowSize = 0;
+    auto data = reinterpret_cast<const unsigned char*>(buf.data());
 
-    windowSize
-        = buf.data()[0] << 24
-        | buf.data()[1] << 16
-        | buf.data()[2] <<  8
-        | buf.data()[3] <<  0;
+    uint32_t windowSize
+        = data[0] << 24
+        | data[1] << 16
+        | data[2] <<  8
+        | data[3] <<  0;
 
     // ignore reserved bit
     windowSize &= 0x7fffffff;
 
-    return windowSize;
+    return static_cast<int32_t>(windowSize);
 }
 
 void ServerTransport::Impl::receiveWindowUpdate(

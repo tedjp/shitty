@@ -127,12 +127,22 @@ void Transport::handleMessage() {
     Connection* connection = connection_;
     assert(connection != nullptr);
 
+    assert(incoming_message_.has_value());
+    // FIXME: Use proper header parsing to determine whether the header _contains_ "close", among
+    // all its values.
+    // TODO: Server SHOULD send "Connection: close" in its response.
+    const bool hasConnectionClose
+            = incoming_message_->message.headers().get("connection").second == "close";
+
     handleIncomingMessage(std::move(incoming_message_.value()));
 
     if (connection->getTransport() != this)
         return; // `this` has been replaced by an upgraded transport. Return all stack frames immediately.
 
     resetIncomingMessage();
+
+    if (hasConnectionClose)
+        connection->close();
 }
 
 void Transport::resetIncomingMessage() {

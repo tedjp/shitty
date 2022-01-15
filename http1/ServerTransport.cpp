@@ -57,7 +57,7 @@ void ServerTransport::onRequest(Request&& req) {
         request_handler_ = routes_->getHandler(req);
 
     if (!request_handler_) {
-        sendResponse(Response(404, "No handler"));
+        sendResponse(Response(404, "No handler.\n"));
         return;
     }
 

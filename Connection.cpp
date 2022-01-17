@@ -85,9 +85,13 @@ void Connection::onPollIn() {
     if (read_len > 0) {
         incoming_.addTailContent(static_cast<size_t>(read_len));
         transport_->onInput(incoming_);
+
         // edge-triggered; there might be more to read.
-        // tail-recurse.
-        onPollIn();
+        if (isOpen()) {
+            // tail-recurse.
+            onPollIn();
+        }
+
         return;
     }
 

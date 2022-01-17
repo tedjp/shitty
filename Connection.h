@@ -56,6 +56,9 @@ public:
 
     void close();
 
+    bool isOpen() const;
+    bool isClosed() const;
+
     inline bool operator==(const Connection& other);
 
     Payload getOutgoingPayload();
@@ -78,6 +81,14 @@ private:
 
 inline Transport* Connection::getTransport() {
     return transport_.get();
+}
+
+inline bool Connection::isOpen() const {
+    return fd_ != -1;
+}
+
+inline bool Connection::isClosed() const {
+    return fd_ == -1;
 }
 
 inline bool Connection::operator==(const Connection& other) {

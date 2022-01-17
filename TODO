@@ -1,3 +1,5 @@
+- Fix multi-value header handling (eg. "Connection: close, foo")
+- Send "Connection: close" in HTTP/1 response when appropriate
 - Re-connect request routing
 - Fix error handling to correctly return/handle stream & connection errors.
 - Fix memory leak in StaticRoute (print-requests)

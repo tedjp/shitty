@@ -224,7 +224,7 @@ bool Server::Impl::accept() {
 
     auto connection = std::make_unique<Connection>(epfd_, client_fd);
     connection->setConnectionManager(this);
-    connection->setTransport(std::make_unique<SwitchTransport>(connection.get()));
+    connection->setTransport(std::make_unique<SwitchTransport>(*connection, server_->routes_));
 
     auto [iter, inserted] = clients_.try_emplace(client_fd, std::move(connection));
 

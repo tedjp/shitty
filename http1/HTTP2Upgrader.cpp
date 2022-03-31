@@ -13,8 +13,8 @@ unique_ptr<shitty::Transport> HTTP2Upgrader::upgrade(
 {
     return make_unique<http2::ServerTransport>(
             transport->getConnection(),
-            request.headers().get("HTTP2-Settings"),
-            &routes_);
+            routes_,
+            &request.headers().get("HTTP2-Settings"));
 }
 
 } // namespace

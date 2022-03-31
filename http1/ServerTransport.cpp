@@ -28,16 +28,12 @@ Upgrades staticUpgrades;
 } // anonymous
 
 ServerTransport::ServerTransport(
-        Connection* connection,
-        const Routes* routes):
+        Connection& connection,
+        const Routes& routes):
     shitty::http1::Transport(connection),
-    routes_(routes)
+    routes_(&routes)
 {
 }
-
-ServerTransport::ServerTransport(Connection* connection):
-    shitty::http1::Transport(connection)
-{}
 
 void ServerTransport::sendResponse(const Response& resp) {
     sendMessage(statusLine(resp), resp.message);
@@ -82,11 +78,11 @@ void ServerTransport::upgrade(
         Request&& request) {
     assert(newTransport != nullptr);
 
-    Connection* connection = getConnection();
-    connection->setTransport(move(newTransport));
+    Connection& connection = getConnection();
+    connection.setTransport(move(newTransport));
     // `this` has been destroyed, but this stack frame still exists
     http2::ServerTransport* h2Transport = dynamic_cast<http2::ServerTransport*>(
-            connection->getTransport());
+            connection.getTransport());
     assert(h2Transport != nullptr);
     // The upgraded incoming request becomes stream 1.
     http2::ServerStream& stream = h2Transport->getStream(1);

@@ -12,10 +12,8 @@ class ServerTransport:
     public shitty::http1::Transport {
 public:
     ServerTransport(
-            Connection* connection,
-            const Routes* routes);
-
-    ServerTransport(Connection* connection);
+            Connection& connection,
+            const Routes& routes);
 
     // from shitty::ServerStream
     void onRequest(Request&&) override;

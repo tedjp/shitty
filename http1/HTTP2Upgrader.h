@@ -13,6 +13,7 @@ public:
 
 private:
     // empty routes since this is just for test :3
+    // Routes ought to be owned by the server, not the transport.
     static const Routes routes_;
 };
 

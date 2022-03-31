@@ -9,7 +9,7 @@ class ClientTransport:
     public shitty::ClientStream,
     public shitty::http1::Transport {
 public:
-    ClientTransport(Connection* connection, resp_handler_t&& handler = resp_handler_t());
+    ClientTransport(Connection& connection, resp_handler_t&& handler = resp_handler_t());
 
     // from shitty::ClientTransport
     void sendRequest(const Request& request) override;

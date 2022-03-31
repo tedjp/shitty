@@ -8,10 +8,10 @@ using shitty::Request;
 using shitty::Response;
 
 ClientTransport::ClientTransport(
-        Connection* connection,
+        Connection& connection,
         resp_handler_t&& handler):
     shitty::http1::Transport(connection),
-    connection_(connection),
+    connection_(&connection),
     handler_(std::move(handler))
 {
 }

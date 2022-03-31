@@ -20,12 +20,10 @@ namespace shitty::http2 {
 class ServerTransport::Impl {
 public:
     Impl(
-            ServerTransport* parent,
-            Connection* connection,
-            const Header& http2Settings,
-            const Routes* routes);
-
-    Impl(ServerTransport* parent, Connection* connection);
+            ServerTransport& parent,
+            Connection& connection,
+            const Routes& routes,
+            const Header* http2Settings);
 
     void onInput(StreamBuf& buf);
 
@@ -90,14 +88,10 @@ private:
 };
 
 ServerTransport::ServerTransport(
-        Connection* connection,
-        const Header& http2Settings,
-        const Routes* routes):
-    impl_(make_unique<Impl>(this, connection, http2Settings, routes))
-{}
-
-ServerTransport::ServerTransport(Connection* connection):
-    impl_(make_unique<Impl>(this, connection))
+        Connection& connection,
+        const Routes& routes,
+        const Header* http2Settings):
+    impl_(make_unique<Impl>(*this, connection, routes, http2Settings))
 {}
 
 void ServerTransport::onInput(StreamBuf& buf) {
@@ -136,22 +130,17 @@ static Settings decodeBase64Settings(std::string_view b64encoded) {
 }
 
 ServerTransport::Impl::Impl(
-        ServerTransport* parent,
-        Connection* connection,
-        const Header& http2Settings,
-        const Routes* routes):
-    parent_(parent),
-    connection_(connection),
-    peerSettings_(decodeBase64Settings(http2Settings.second)),
-    routes_(routes)
+        ServerTransport& parent,
+        Connection& connection,
+        const Routes& routes,
+        const Header* http2Settings):
+    parent_(&parent),
+    connection_(&connection),
+    routes_(&routes)
 {
-    initialize();
-}
+    if (http2Settings != nullptr)
+        peerSettings_ = decodeBase64Settings(http2Settings->second);
 
-ServerTransport::Impl::Impl(ServerTransport* parent, Connection* connection):
-    parent_(parent),
-    connection_(connection)
-{
     initialize();
 }
 

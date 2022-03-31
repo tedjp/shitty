@@ -12,12 +12,12 @@ namespace shitty::http1 {
 
 class Transport: public shitty::Transport {
 public:
-    Transport(Connection* connection);
+    Transport(Connection& connection);
 
     // shitty::Transport overrides
     void onInput(StreamBuf& input_buffer) override;
 
-    Connection* getConnection();
+    Connection& getConnection() noexcept;
 
 protected:
     virtual void handleIncomingMessage(IncomingMessage&&) = 0;
@@ -53,11 +53,11 @@ private:
     // terminal chunk is read.
     ssize_t expected_body_length_ = 0;
 
-    Connection* connection_;
+    Connection* connection_ = nullptr;
 };
 
-inline Connection* Transport::getConnection() {
-    return connection_;
+inline Connection& Transport::getConnection() noexcept {
+    return *connection_;
 }
 
 }

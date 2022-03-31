@@ -19,8 +19,8 @@ using shitty::StreamBuf;
 
 namespace shitty::http1 {
 
-Transport::Transport(Connection* connection):
-    connection_(connection)
+Transport::Transport(Connection& connection):
+    connection_(&connection)
 {}
 
 void Transport::onInput(StreamBuf& input_buffer) {

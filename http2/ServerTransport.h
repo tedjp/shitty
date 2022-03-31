@@ -21,13 +21,12 @@ class ServerTransport: public shitty::Transport {
 public:
     // Construct
     // connection - connection
-    // settings - base64-encoded HTTP2-Settings header
     // routes - routes
+    // settings - base64-encoded HTTP2-Settings header
     ServerTransport(
-            Connection* connection,
-            const Header& http2Settings,
-            const Routes* routes);
-    ServerTransport(Connection* connection);
+            Connection& connection,
+            const Routes& routes,
+            const Header* http2Settings = nullptr);
     ~ServerTransport();
 
     // shitty::Transport overrides

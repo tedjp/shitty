@@ -48,7 +48,7 @@ ClientTransportSource::newTransport() {
     }
 
     auto conn = std::make_unique<Connection>(epfd_, s);
-    auto transport = std::make_unique<http1::ClientTransport>(conn.get());
+    auto transport = std::make_unique<http1::ClientTransport>(*conn);
     ClientTransport* ct = transport.get();
     conn->setTransport(std::move(transport));
 

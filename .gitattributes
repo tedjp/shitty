@@ -1,0 +1,8 @@
+* text=auto
+TODO text
+*.cpp text
+*.h text
+*.json text
+*.md text
+*.sh text eol=lf
+*.txt text

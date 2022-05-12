@@ -17,7 +17,7 @@ static uint8_t mask_from_bits(uint_fast8_t bits) {
 // bits: how many of the least significant bits to use from the first octet.
 // returns how many bytes were read (including the first)
 // or negative error code
-ssize_t decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *number) {
+ptrdiff_t decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax_t *number) {
     if (len == 0 || bits > 8)
         return -PROTOCOL_ERROR;
 
@@ -56,7 +56,7 @@ ssize_t decode_number(const uint8_t* buf, size_t len, uint_fast8_t bits, uintmax
 // Return number of bytes used for encoding (including the bits in
 // the prefix/first byte). Returns 1 for all values that fit in the prefix.
 // buflen *includes* the length of the first byte.
-ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, size_t buflen) {
+ptrdiff_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, size_t buflen) {
     if (!buf || buflen == 0 || prefix_bits > 8 || prefix_bits < 1)
         return -1; // maybe -INTERNAL_ERROR
 
@@ -72,7 +72,7 @@ ssize_t encode_number(uintmax_t number, uint_fast8_t prefix_bits, uint8_t *buf, 
 
     number -= mask;
 
-    ssize_t octet = 0;
+    ptrdiff_t octet = 0;
     while (number >= 0x80) {
         ++octet;
 

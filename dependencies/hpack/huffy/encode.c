@@ -2,20 +2,8 @@
 #include <string.h>
 
 #include "encode.h"
+#include "encode-table.h"
 #include "../number.h"
-
-
-// Future optimizations:
-// - Remove `bits` from the structure and store it separately, keyed by input
-//   character (saves 1 kiB; 256 bytes in `bits` and  768 bytes in padding).
-// - Store static tables in native byte order (ie. swap for little-endian
-//   machines) to avoid bswapping each multibyte symbol.
-struct encv {
-    uint_fast32_t value;
-    uint_fast8_t bits;
-};
-
-#include "encode-table.c"
 
 // Once the size is known it can be prefixed with the H[uffman] bit and the
 // 7-bit prefixed length prefix.

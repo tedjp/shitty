@@ -9,16 +9,6 @@ namespace shitty {
 
 class Request {
 public:
-#if 0
-    explicit Request(
-            std::string&& method = {"GET"},
-            std::string&& path = {"/"},
-            Headers&& headers = Headers());
-    explicit Request(
-            const std::string& method = {"GET"},
-            const std::string& path = {"/"},
-            Headers&& headers = Headers());
-#endif
     explicit Request(
             const std::string& method = {"GET"},
             const std::string& path = {"/"},

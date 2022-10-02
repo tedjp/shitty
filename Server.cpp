@@ -18,7 +18,7 @@
 
 namespace shitty {
 
-class Server::Impl:
+class Server::Impl final:
     public ConnectionManager,
     public EventReceiver
 {
@@ -37,6 +37,7 @@ public:
 
 private:
     void setup();
+    void bind();
     void addEventReceiver(int fd, EventReceiver *receiver);
     void loop();
     void dispatch(struct epoll_event *event);
@@ -110,25 +111,37 @@ void Server::Impl::setup() {
     if (listenfd_ == -1)
         throw error_errno("socket");
 
-    struct sockaddr_in6 sin6 = {};
-    sin6.sin6_family = AF_INET6;
-    sin6.sin6_port = htons(80);
-    sin6.sin6_addr = in6addr_any;
-
     tcp_defer_accept(listenfd_);
-
-    if (::bind(
-                listenfd_,
-                reinterpret_cast<const struct sockaddr*>(&sin6),
-                sizeof(sin6)) == -1)
-    {
-        throw error_errno("bind");
-    }
+    bind();
 
     if (::listen(listenfd_, 100) == -1)
         throw error_errno("listen");
 
     addEventReceiver(listenfd_, this);
+}
+
+void Server::Impl::bind()
+{
+    const std::array try_ports = std::to_array<const uint16_t>({ 80, 8080 });
+
+    struct sockaddr_in6 sin6 = {};
+    sin6.sin6_family = AF_INET6;
+    sin6.sin6_addr = in6addr_any;
+
+    for (uint16_t port : try_ports)
+    {
+        sin6.sin6_port = htons(port);
+
+        if (::bind(
+            listenfd_,
+            reinterpret_cast<const struct sockaddr*>(&sin6),
+            sizeof(sin6)) == 0)
+        {
+            return;
+        }
+    }
+
+	throw error_errno("bind: no ports available");
 }
 
 void Server::Impl::addEventReceiver(int fd, EventReceiver* receiver) {

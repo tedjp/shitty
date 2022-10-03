@@ -37,18 +37,26 @@ public:
 
     int32_t availableWindowSize() const;
 
-    // TODO: interface this
-    Headers headers_;
+    const Headers& headers() const;
 
 private:
+    // Stream Identifier (RFC 7540 5.1.1; unsigned 31-bit).
     uint32_t id_ = 0;
-    // XXX: Hold a pointer to the Impl instead to avoid an indirection
+
+    // Non-owning pointer to the (parent) transport. Useful for sending
+    // responses.
+    // TODO: Hold a pointer to the Impl instead to avoid an indirection.
     ServerTransport* transport_ = nullptr;
 
     // initial value from RFC 7540 6.5.2.
     int32_t windowSize_ = 65535;
 
     StreamState state_ = StreamState::Idle;
+
+    Headers headers_;
+
+    // Buffered body
+    std::vector<std::byte> body_;
 };
 
 inline StreamState ServerStream::getState() const {
@@ -82,6 +90,10 @@ inline void ServerStream::subtractWindowSize(uint32_t adjustment) {
 
 inline int32_t ServerStream::availableWindowSize() const {
     return windowSize_;
+}
+
+inline const Headers& ServerStream::headers() const {
+    return headers_;
 }
 
 } // namespace

@@ -16,6 +16,10 @@ public:
         kv_(headers)
     {}
     Headers(std::initializer_list<std::string> headers);
+
+    Headers& operator+=(const Headers&);
+    Headers& operator+=(Headers&&);
+
     void set(const std::string& name, const std::string& value);
     void add(const std::string& name, const std::string& value);
     void remove(const std::string& name);

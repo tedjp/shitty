@@ -28,6 +28,20 @@ Headers::Headers(std::initializer_list<std::string> headers) {
     }
 }
 
+Headers& Headers::operator+=(const Headers& headers) {
+    for (const auto& [k, v] : headers.kv_)
+        kv_.emplace(k, v);
+
+    return *this;
+}
+
+Headers& Headers::operator+=(Headers&& headers) {
+    for (auto&& [k, v] : headers.kv_)
+        kv_.emplace(std::move(k), std::move(v));
+
+    return *this;
+}
+
 void Headers::set(const string& name, const string& value) {
     kv_.erase(name);
     kv_.emplace(name, value);

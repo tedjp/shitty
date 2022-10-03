@@ -1,15 +1,15 @@
 target_sources(shitty
 	PRIVATE
-	http2/DataFrame.h
-	http2/FlowControl.h
-	http2/Frame.cpp
-	http2/Frame.h
-	http2/HeadersFrame.h
-	http2/Protocol.h
-	http2/ServerStream.cpp
-	http2/ServerStream.h
-	http2/ServerTransport.cpp
-	http2/ServerTransport.h
-	http2/Settings.cpp
-	http2/Settings.h
+	DataFrame.h
+	FlowControl.h
+	Frame.cpp
+	Frame.h
+	HeadersFrame.h
+	Protocol.h
+	ServerStream.cpp
+	ServerStream.h
+	ServerTransport.cpp
+	ServerTransport.h
+	Settings.cpp
+	Settings.h
 )

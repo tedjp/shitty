@@ -1,20 +1,20 @@
 target_sources(
 	shitty
 	PRIVATE
-	http1/ClientTransport.cpp
-	http1/ClientTransport.h
-	http1/ClientTransportSource.cpp
-	http1/ClientTransportSource.h
-	http1/HTTP1.cpp
-	http1/HTTP1.h
-	http1/HTTP2Upgrader.cpp
-	http1/HTTP2Upgrader.h
-	http1/IncomingMessage.h
-	http1/ServerTransport.cpp
-	http1/ServerTransport.h
-	http1/Transport.cpp
-	http1/Transport.h
-	http1/Upgrader.h
-	http1/UpgradeRegistry.cpp
-	http1/UpgradeRegistry.h
+	ClientTransport.cpp
+	ClientTransport.h
+	ClientTransportSource.cpp
+	ClientTransportSource.h
+	HTTP1.cpp
+	HTTP1.h
+	HTTP2Upgrader.cpp
+	HTTP2Upgrader.h
+	IncomingMessage.h
+	ServerTransport.cpp
+	ServerTransport.h
+	Transport.cpp
+	Transport.h
+	Upgrader.h
+	UpgradeRegistry.cpp
+	UpgradeRegistry.h
 )

@@ -35,5 +35,10 @@ Message::Message(const std::string& body, const Headers& headers):
     headers_(headers)
 {}
 
+Message::Message(Headers&& headers, std::span<const std::byte> body):
+    body_(std::string(reinterpret_cast<const char*>(body.data()), body.size())),
+    headers_(std::move(headers))
+{}
+
 Message::~Message()
 {}

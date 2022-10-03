@@ -1,6 +1,7 @@
 #pragma once
 
 #include <initializer_list>
+#include <span>
 #include <string>
 
 #include "Headers.h"
@@ -19,6 +20,7 @@ public:
     Message(std::initializer_list<std::string> headers, std::string&& body);
     Message(std::initializer_list<Header> headers, std::string&& body);
     Message(const std::string& body, const Headers& headers);
+    Message(Headers&& headers, std::span<const std::byte> body);
     ~Message();
 
     inline std::string& body();
@@ -27,6 +29,7 @@ public:
     inline const Headers& headers() const;
 
 private:
+    // TODO: Replace with `std::vector<std::byte>`.
     std::string body_;
     Headers headers_;
 };

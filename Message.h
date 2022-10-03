@@ -11,7 +11,6 @@ namespace shitty {
 class Message {
 public:
     Message() = default;
-    // XXX: Just make this templated on all the Headers c'tors.
     explicit Message(Headers&& headers);
     explicit Message(const std::string& body);
     explicit Message(std::string&& body);
@@ -21,7 +20,6 @@ public:
     Message(std::initializer_list<Header> headers, std::string&& body);
     Message(const std::string& body, const Headers& headers);
     Message(Headers&& headers, std::span<const std::byte> body);
-    ~Message();
 
     inline std::string& body();
     inline const std::string& body() const;

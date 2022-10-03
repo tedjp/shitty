@@ -1,5 +1,6 @@
 #include <cassert>
 #include <optional>
+#include <string_view>
 #include <unordered_map>
 
 #include <fb64/fb64.h> // https://github.com/tedjp/fb64
@@ -34,6 +35,15 @@ public:
     void writeHeadersFrame(const HeadersFrame& frame);
 
 private:
+    // Get method from :method pseudo-header
+    static const std::string& getMethod(const Headers& headers);
+    // Get path from :path pseudo-header
+    static const std::string& getPath(const Headers& headers);
+
+    static const std::string& getHeaderValue(
+        const Headers& headers,
+        const std::string& name);
+
     void initialize();
 
     void sendPreface();
@@ -58,6 +68,7 @@ private:
     void addStreamWindowSize(uint32_t streamId, int32_t increment);
 
     void processFrameBody(StreamBuf& buf);
+    void dispatch(ServerStream& stream);
     void endStream(uint32_t streamId);
 
     ServerTransport* parent_ = nullptr;
@@ -142,6 +153,21 @@ ServerTransport::Impl::Impl(
         peerSettings_ = decodeBase64Settings(http2Settings->second);
 
     initialize();
+}
+
+const std::string& ServerTransport::Impl::getMethod(const Headers& headers) {
+    return getHeaderValue(headers, ":method");
+}
+
+const std::string& ServerTransport::Impl::getPath(const Headers& headers) {
+    return getHeaderValue(headers, ":path");
+}
+
+const std::string& ServerTransport::Impl::getHeaderValue(
+    const Headers& headers,
+    const std::string& name)
+{
+    return headers.get(name).second;
 }
 
 void ServerTransport::Impl::initialize() {
@@ -416,13 +442,11 @@ void ServerTransport::Impl::receiveData(
         length -= padLength;
     }
 
-    // TODO: Handle actual data
+    stream.request().body().append(buf.data(), length);
 
-    if (DataFrame::isEndStream(frameHeader)) {
-        // TODO: Accumulate request & headers and pass to handler
-        stream.onRequest(Request());
-        endStream(frameHeader.streamId);
-    }
+    // TODO: Properly determine end-of-request.
+	dispatch(stream);
+	endStream(stream.id());
 }
 
 void ServerTransport::Impl::receiveHeaders(
@@ -449,20 +473,17 @@ void ServerTransport::Impl::receiveHeaders(
 
     assert(stream != nullptr);
 
-    // TODO: Accumulate headers until IsEndHeaders
-    //stream->headers_.add(headers);
-
-    // TODO: Accumulate body until IsEndStream
-    // For now just ignore everything until the EndStream & EndHeaders frame
-    // (and ignore its body too)
-    if (HeadersFrame::isEndHeaders(frameHeader)
-            && HeadersFrame::isEndStream(frameHeader))
-    {
-        // TODO: provide real request to OnRequest method
-        stream->onRequest(Request());
-        // Clean up stream
-        endStream(frameHeader.streamId);
+    // Accumulate headers
+    for (::Header& header : headers) {
+        stream->request().headers().add(
+            std::move(header.name()),
+            std::move(header.value()));
     }
+
+    // TODO: Properly determine when the request is complete and the request
+    // should be dispatched.
+    dispatch(*stream);
+    endStream(stream->id());
 }
 
 static int32_t readWindowSize(StreamBuf& buf) {
@@ -514,6 +535,15 @@ void ServerTransport::Impl::addStreamWindowSize(uint32_t streamId, int32_t windo
 
     if (stream != streams_.end())
         stream->second->addWindowSize(windowSize);
+}
+
+void ServerTransport::Impl::dispatch(ServerStream& stream) {
+	// Extract method & path pseudo-headers before moving the request
+	// Message into the request handler.
+	const string method = getMethod(stream.request().headers());
+	const string path = getPath(stream.request().headers());
+
+	stream.onRequest(Request(method, path, std::move(stream.request())));
 }
 
 void ServerTransport::Impl::endStream(uint32_t streamId) {

@@ -26,6 +26,8 @@ public:
             uint32_t id,
             ServerTransport* transport);
 
+    uint32_t id() const;
+
     void onRequest(Request&&) override;
     void sendResponse(const Response&) override;
 
@@ -37,7 +39,8 @@ public:
 
     int32_t availableWindowSize() const;
 
-    const Headers& headers() const;
+    const Message& request() const;
+    Message& request();
 
 private:
     // Stream Identifier (RFC 7540 5.1.1; unsigned 31-bit).
@@ -53,11 +56,14 @@ private:
 
     StreamState state_ = StreamState::Idle;
 
-    Headers headers_;
-
-    // Buffered body
-    std::vector<std::byte> body_;
+    // TODO: Replace with std::unique_ptr<MessageHandler*> to support chunking
+    // etc.
+    Message request_;
 };
+
+inline uint32_t ServerStream::id() const {
+    return id_;
+}
 
 inline StreamState ServerStream::getState() const {
     return state_;
@@ -92,8 +98,12 @@ inline int32_t ServerStream::availableWindowSize() const {
     return windowSize_;
 }
 
-inline const Headers& ServerStream::headers() const {
-    return headers_;
+inline const Message& ServerStream::request() const {
+    return request_;
+}
+
+inline Message& ServerStream::request() {
+    return request_;
 }
 
 } // namespace

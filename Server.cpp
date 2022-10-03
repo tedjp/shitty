@@ -141,7 +141,7 @@ void Server::Impl::bind()
         }
     }
 
-	throw error_errno("bind: no ports available");
+    throw error_errno("bind: no ports available");
 }
 
 void Server::Impl::addEventReceiver(int fd, EventReceiver* receiver) {

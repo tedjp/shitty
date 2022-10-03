@@ -445,8 +445,8 @@ void ServerTransport::Impl::receiveData(
     stream.request().body().append(buf.data(), length);
 
     // TODO: Properly determine end-of-request.
-	dispatch(stream);
-	endStream(stream.id());
+    dispatch(stream);
+    endStream(stream.id());
 }
 
 void ServerTransport::Impl::receiveHeaders(
@@ -538,12 +538,12 @@ void ServerTransport::Impl::addStreamWindowSize(uint32_t streamId, int32_t windo
 }
 
 void ServerTransport::Impl::dispatch(ServerStream& stream) {
-	// Extract method & path pseudo-headers before moving the request
-	// Message into the request handler.
-	const string method = getMethod(stream.request().headers());
-	const string path = getPath(stream.request().headers());
+    // Extract method & path pseudo-headers before moving the request
+    // Message into the request handler.
+    const string method = getMethod(stream.request().headers());
+    const string path = getPath(stream.request().headers());
 
-	stream.onRequest(Request(method, path, std::move(stream.request())));
+    stream.onRequest(Request(method, path, std::move(stream.request())));
 }
 
 void ServerTransport::Impl::endStream(uint32_t streamId) {

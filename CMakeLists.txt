@@ -45,8 +45,8 @@ target_sources(shitty
 	Headers.h
 	Message.cpp
 	Message.h
-    MessageHandler.cpp
-    MessageHandler.h
+	MessageHandler.cpp
+	MessageHandler.h
 	Payload.h
 	Payload-inl.h
 	ProxyHandler.cpp

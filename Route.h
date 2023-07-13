@@ -13,6 +13,7 @@ class Route {
 public:
     explicit Route(const std::string& path);
     explicit Route(std::string&& path);
+    virtual ~Route() = default;
 
     inline const std::string& path() const;
 

@@ -2,12 +2,12 @@
 
 CC = gcc -std=gnu99 -pipe -fPIC -Wall -g
 
-all: bitbuf.o encode.o decode.o
+all: bitbuf.o encode.o decode.o encode-table.o
 
 encode-table.c: huffcodes.txt make-etable.sh
 	./make-etable.sh < $< > $@
 
-encode.c: encode-table.c
+encode.c: encode-table.c encode-table.h
 
 encode.o: encode.c encode.h
 	$(CC) -c -o $@ $<

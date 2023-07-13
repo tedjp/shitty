@@ -8,6 +8,7 @@ libhpack.a: header.o number.o
 		huffy/bitbuf.o \
 		huffy/decode.o \
 		huffy/encode.o \
+		huffy/encode-table.o \
 		#
 
 number.o: number.c number.h

@@ -1,3 +1,5 @@
+#include <functional>
+
 #include "Message.h"
 #include "BufferMessageHandler.h"
 

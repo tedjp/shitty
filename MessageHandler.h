@@ -1,4 +1,5 @@
 #include <cstddef> // std::byte
+#include <optional>
 #include <span>
 
 #include "Headers.h"

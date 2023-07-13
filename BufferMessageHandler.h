@@ -1,3 +1,7 @@
+#include <cstdlib>
+#include <span>
+#include <vector>
+
 #include "MessageHandler.h"
 
 namespace shitty {

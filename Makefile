@@ -65,13 +65,13 @@ LDLIBS = \
 		 #
 
 hello-world: HelloWorld.cpp $(OBJS)
-	$(CXX) -I.. -o  $@ $^ $(LDLIBS)
+	$(CXX) -I. -o $@ $^ $(LDLIBS)
 
 proxy: ProxyServer.cpp $(OBJS)
-	$(CXX) -I.. -o $@ $^ $(LDLIBS)
+	$(CXX) -I. -o $@ $^ $(LDLIBS)
 
 print-requests: PrintRequestServer.cpp $(OBJS)
-	$(CXX) -o $@ $^ $(LDLIBS)
+	$(CXX) -I. -o $@ $^ $(LDLIBS)
 
 clean:
 	rm -f \

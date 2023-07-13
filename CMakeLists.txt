@@ -12,6 +12,11 @@ project ("shitty")
 add_library(shitty)
 target_include_directories(
 	shitty
+	INTERFACE
+	.
+)
+target_include_directories(
+	shitty
 	PRIVATE
 	dependencies
 )
@@ -91,10 +96,24 @@ target_sources(shitty
 	UnhandledRequestHandler.h
 )
 
+add_executable(hello-world
+	HelloWorld.cpp
+)
+target_link_libraries(hello-world
+	fb64
+	shitty
+)
 add_executable(print-requests
 	PrintRequestServer.cpp
 )
 target_link_libraries(print-requests
+	fb64
+	shitty
+)
+add_executable(proxy
+	ProxyServer.cpp
+)
+target_link_libraries(proxy
 	fb64
 	shitty
 )

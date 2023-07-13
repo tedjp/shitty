@@ -1,5 +1,5 @@
-#include <shitty/Server.h>
-#include <shitty/StaticResponder.h>
+#include <Server.h>
+#include <StaticResponder.h>
 
 using namespace shitty;
 

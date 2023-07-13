@@ -36,9 +36,33 @@ Clone submodules to ensure it's available:
     git submodule init
     git submodule update
 
-## Usage
+## Build
 
-    make depend && make -j && sudo ./hello-world
+### CMake
+
+    cmake -B build
+    make -C build
+
+Executables are output to the `build` directory.
+
+### Makefiles (deprecated)
+
+The old Makefile build system might still work. Like this:
+
+    make depend
+    make
+
+## Run
+
+When built with CMake build:
+
+    build/hello-world
+
+Makefile build:
+
+    ./hello-world
+
+The server will bind port 80 if possible, otherwise it binds port 8080.
 
 ## HPACK — HTTP/2 header compression
 

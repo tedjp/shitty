@@ -1,6 +1,6 @@
-#include <shitty/http1/ClientTransportSource.h>
-#include <shitty/ProxyHandler.h>
-#include <shitty/Server.h>
+#include <http1/ClientTransportSource.h>
+#include <ProxyHandler.h>
+#include <Server.h>
 
 using namespace shitty;
 

@@ -1,7 +1,2 @@
-*.a
-*.o
-/hello-world
-/print-requests
-/proxy
 /.vs
 /out

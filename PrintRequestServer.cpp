@@ -31,7 +31,14 @@ public:
 };
 
 int main(void) {
-    Server s;
-    s.addRoute(std::make_unique<StaticRoute>("/", std::make_unique<PrintRequestHandler>()));
-    s.run();
+    try {
+        Server s;
+        s.addRoute(std::make_unique<StaticRoute>("/", std::make_unique<PrintRequestHandler>()));
+        s.run();
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }

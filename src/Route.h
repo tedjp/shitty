@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "RequestHandlerFactory.h"
 #include "StaticResponder.h"
@@ -11,11 +12,10 @@ namespace shitty {
 // A Route is a prefix path and a handler function.
 class Route {
 public:
-    explicit Route(const std::string& path);
-    explicit Route(std::string&& path);
+    explicit Route(std::string_view path);
     virtual ~Route() = default;
 
-    inline const std::string& path() const;
+    std::string_view path() const;
 
     virtual std::unique_ptr<RequestHandler> getHandler() const = 0;
 

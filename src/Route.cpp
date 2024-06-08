@@ -2,12 +2,8 @@
 
 using namespace shitty;
 
-Route::Route(const std::string& path):
+Route::Route(std::string_view path):
     path_(path)
-{}
-
-Route::Route(std::string&& path):
-    path_(std::move(path))
 {}
 
 StaticRoute::StaticRoute(const std::string& path, std::unique_ptr<StaticResponder>&& responder):

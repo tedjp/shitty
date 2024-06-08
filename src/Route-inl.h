@@ -1,6 +1,6 @@
 namespace shitty {
 
-inline const std::string& Route::path() const {
+inline std::string_view Route::path() const {
     return path_;
 }
 

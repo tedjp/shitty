@@ -2,13 +2,15 @@
 
 #include <memory>
 
+#include "Request.h"
+#include "Response.h"
 #include "Stream.h"
-#include "RequestHandler.h"
 
 namespace shitty {
 
 class Request;
 class Response;
+class Server;
 
 class ServerStream: public Stream {
 public:
@@ -16,7 +18,8 @@ public:
     virtual void onRequest(Request&&) = 0;
 
 private:
-    std::unique_ptr<RequestHandler> handler_;
+    // Never nullptr
+    Server* server_ = nullptr;
 };
 
-}
+} // namespace shitty

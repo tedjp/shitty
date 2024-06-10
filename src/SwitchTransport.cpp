@@ -9,9 +9,9 @@ using namespace std;
 
 namespace shitty {
 
-SwitchTransport::SwitchTransport(Connection& connection, const Routes& routes):
+SwitchTransport::SwitchTransport(Connection& connection, Server& server):
     connection_(&connection),
-    routes_(&routes)
+    server_(&server)
 {}
 
 void SwitchTransport::onInput(StreamBuf& buf) {
@@ -43,9 +43,9 @@ void SwitchTransport::onInput(StreamBuf& buf) {
     unique_ptr<Transport> transport;
 
     if (definitelyHTTP2)
-        transport = make_unique<http2::ServerTransport>(*connection, *routes_);
+        transport = make_unique<http2::ServerTransport>(*connection, *server_);
     else
-        transport = make_unique<http1::ServerTransport>(*connection, *routes_);
+        transport = make_unique<http1::ServerTransport>(*connection, *server_);
 
     connection->setTransport(move(transport));
     // `this` has been destroyed: no more access to class members!

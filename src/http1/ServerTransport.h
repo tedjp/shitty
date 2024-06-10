@@ -11,9 +11,7 @@ class ServerTransport:
     public shitty::ServerStream,
     public shitty::http1::Transport {
 public:
-    ServerTransport(
-            Connection& connection,
-            const Routes& routes);
+    ServerTransport(Connection& connection, Server& server);
 
     // from shitty::ServerStream
     void onRequest(Request&&) override;
@@ -34,8 +32,7 @@ private:
 
     virtual void handleExpect(const std::string& value);
 
-    const Routes* routes_ = nullptr;
-    std::unique_ptr<RequestHandler> request_handler_;
+    Server* server_ = nullptr;
 };
 
 } // namespace

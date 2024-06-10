@@ -1,27 +1,23 @@
 #pragma once
 
-#include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
-#include "Request.h"
 #include "RequestHandler.h"
-#include "Route.h"
 
 namespace shitty {
 
 class Routes {
 public:
-    Routes() = default;
+    void addHandler(std::string_view path, RequestHandler&& handler);
 
-    void addRoute(std::unique_ptr<Route>&& route) {
-        routes_.emplace_back(std::move(route));
-    }
-
-    std::unique_ptr<RequestHandler>
-    getHandler(const Request& request) const;
+    void dispatch(Request&& request, Responder&& responder);
 
 private:
-    std::vector<std::unique_ptr<Route>> routes_;
+    // Handlers are kept in the order they were added.
+    std::vector<std::pair<std::string, RequestHandler>> handlers_;
 };
 
 }

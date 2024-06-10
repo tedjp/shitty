@@ -1,41 +1,53 @@
 #include "ProxyHandler.h"
 #include "http1/ServerTransport.h"
 
-using namespace shitty;
+namespace shitty {
 
-ProxyHandler::ProxyHandler(http1::ClientTransportSource* source):
-    client_transport_source_(source)
+PerRequestProxyHandler::PerRequestProxyHandler(
+    http1::ClientTransportSource* source,
+    Request&& request,
+    Responder&& responder):
+    client_transport_source_(source),
+    responder_(std::move(responder))
 {
-}
-
-void ProxyHandler::onRequest(Request&& request, ServerStream* stream) {
-    front_stream_  = stream;
     sendBackendRequest(std::move(request));
 }
 
-void ProxyHandler::sendBackendRequest(Request&& request) {
+void PerRequestProxyHandler::sendBackendRequest(Request&& request) {
     acquireBackendTransport(request);
-    backend_transport_->sendRequest(std::move(request));
+    backendTransport_->sendRequest(std::move(request));
 }
 
-void ProxyHandler::respond(Response&& response) {
-    front_stream_->sendResponse(std::move(response));
+void PerRequestProxyHandler::respond(Response&& response) {
+    responder_.respond(std::move(response));
 }
 
-void ProxyHandler::onBackendResponse(Response&& response) {
+void PerRequestProxyHandler::onBackendResponse(Response&& response) {
     releaseBackendTransport();
     respond(std::move(response));
+    delete this;
 }
 
 void
-ProxyHandler::acquireBackendTransport(const Request& request) {
-    backend_transport_ = client_transport_source_->getTransport(
-            std::bind(std::mem_fn(&ProxyHandler::onBackendResponse), this, std::placeholders::_1));
+PerRequestProxyHandler::acquireBackendTransport(const Request& request) {
+    backendTransport_ = client_transport_source_->getTransport(
+        [this](Response&& response, ClientStream*) {
+            onBackendResponse(std::move(response));
+        });
 }
 
 void
-ProxyHandler::releaseBackendTransport() {
-    backend_transport_->resetHandler();
-    client_transport_source_->putTransport(std::move(backend_transport_));
-    backend_transport_ = nullptr;
+PerRequestProxyHandler::releaseBackendTransport() {
+    backendTransport_->resetHandler();
+    client_transport_source_->putTransport(std::move(backendTransport_));
+    backendTransport_ = nullptr;
 }
+
+RequestHandler MakeProxyHandler(http1::ClientTransportSource* clientTransportSource) {
+    return
+        [clientTransportSource](Request&& request, Responder&& responder) {
+            new PerRequestProxyHandler(clientTransportSource, std::move(request), std::move(responder));
+        };
+}
+
+} // namespace shitty

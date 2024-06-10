@@ -1,22 +1,22 @@
 #pragma once
 
-#include "RequestHandler.h"
 #include "Response.h"
 
 namespace shitty {
 
+class Request;
+class Responder;
+
 // Responds to a request with the same response every time.
-class StaticResponder: public RequestHandler {
+class StaticResponder {
 public:
-    // Allow construction using all Response c'tors
-    template <typename... Args>
-    StaticResponder(Args... args):
-        response_(std::move(args)...)
+    StaticResponder(Response response):
+        response_(std::move(response))
     {
         addStandardHeaders();
     }
 
-    void onRequest(Request&& req, ServerStream *stream) override;
+    void operator()(Request&& req, Responder&& responder);
 
 protected:
     void addStandardHeaders();

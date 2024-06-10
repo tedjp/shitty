@@ -54,17 +54,11 @@ target_sources(shitty
 	MessageHandler.h
 	Payload.h
 	Payload-inl.h
-	ProxyHandler.cpp
-	ProxyHandler.h
 	Request.cpp
 	Request.h
-	RequestHandler.cpp
 	RequestHandler.h
-	RequestHandlerFactory.h
 	Response.cpp
 	Response.h
-	Route.cpp
-	Route-inl.h
 	Routes.cpp
 	Routes.h
 	safefd.h
@@ -111,6 +105,8 @@ target_link_libraries(print-requests
 	shitty
 )
 add_executable(proxy
+	ProxyHandler.cpp
+	ProxyHandler.h
 	ProxyServer.cpp
 )
 target_link_libraries(proxy

@@ -1,23 +1,20 @@
 #pragma once
 
 #include "http1/ClientTransportSource.h"
-#include "RequestHandlerFactory.h"
+#include "RequestHandler.h"
+#include "Responder.h"
 
 namespace shitty {
 
-class ProxyHandler: public RequestHandler {
+// Shall be created with `new` and deletes itself once a backend response is received.
+// This API is not great and could use rework.
+class PerRequestProxyHandler {
 public:
-    ProxyHandler(http1::ClientTransportSource *client_transport_source);
+    explicit PerRequestProxyHandler(
+        http1::ClientTransportSource *client_transport_source,
+        Request&& request,
+        Responder&& responder);
 
-    ProxyHandler(ProxyHandler&&) = default;
-    ProxyHandler& operator=(ProxyHandler&&) = default;
-
-    ProxyHandler(const ProxyHandler&) = delete;
-    ProxyHandler& operator=(const ProxyHandler&) = delete;
-
-    virtual ~ProxyHandler() = default;
-
-    void onRequest(Request&&, ServerStream *stream) override;
     void sendBackendRequest(Request&&);
     void respond(Response&&);
 
@@ -28,14 +25,12 @@ private:
     void acquireBackendTransport(const Request&);
     void releaseBackendTransport();
 
-    http1::ClientTransportSource* client_transport_source_;
+    http1::ClientTransportSource* client_transport_source_ = nullptr;
 
-    ServerStream* front_stream_;
-    http1::ClientTransport* backend_transport_;
+    Responder responder_;
+    http1::ClientTransport* backendTransport_ = nullptr;
 };
 
-using ProxyHandlerFactory = SimpleRequestHandlerFactory<
-    ProxyHandler,
-    http1::ClientTransportSource*>;
+RequestHandler MakeProxyHandler(http1::ClientTransportSource* clientTransportSource);
 
 }

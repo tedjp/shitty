@@ -1,21 +1,12 @@
 #pragma once
 
+#include <functional>
+
 #include "Request.h"
+#include "Responder.h"
 
 namespace shitty {
 
-class ServerStream;
-
-class RequestHandler {
-public:
-    RequestHandler() = default;
-    RequestHandler(RequestHandler&&) = default;
-    RequestHandler(const RequestHandler&) = default;
-    RequestHandler& operator=(const RequestHandler&) = default;
-    RequestHandler& operator=(RequestHandler&&) = default;
-    virtual ~RequestHandler();
-
-    virtual void onRequest(Request&& request, ServerStream *stream) = 0;
-};
+using RequestHandler = std::function<void(Request&&, Responder&&)>;
 
 } // namespace

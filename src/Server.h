@@ -7,40 +7,25 @@
 
 namespace shitty {
 
+class Response;
+
 class Server {
 public:
     Server();
     ~Server();
 
-    Server& addStaticHandler(const std::string& path, Response&& response) {
-        routes_.addRoute(std::make_unique<StaticRoute>(path, std::make_unique<StaticResponder>(std::move(response))));
-        return *this;
-    }
+    // Add a route with a static response.
+    Server& addRoute(std::string_view path, Response response);
 
-    Server& addStaticHandler(const std::string& path, std::unique_ptr<StaticResponder>&& responder) {
-        routes_.addRoute(std::make_unique<StaticRoute>(path, move(responder)));
-        return *this;
-    }
-
-    template <typename... Args>
-    Server& addStaticHandler(const std::string& path, Args... args) {
-        routes_.addRoute(std::make_unique<StaticRoute>(path, std::make_unique<StaticResponder>(std::forward<Args>(args)...)));
-        return *this;
-    }
-
-    template <typename... Args>
-    Server& addHandler(const std::string& path, Args... args) {
-        routes_.addRoute(std::make_unique<FactoryRoute>(path, std::forward<Args>(args)...));
-        return *this;
-    }
-
-    void addRoute(std::unique_ptr<Route>&& route) {
-        routes_.addRoute(std::move(route));
-    }
+    // Add a route with a request handler.
+    Server& addRoute(std::string_view path, RequestHandler handler);
 
     void run();
 
     int epollFD();
+
+    // Called by ServerStreams to dispatch a request to a request handler.
+    void dispatch(Request&& request, Responder&& responder);
 
 private:
     // Config

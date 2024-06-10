@@ -12,9 +12,8 @@ public:
             const Request& request) const override;
 
 private:
-    // empty routes since this is just for test :3
-    // Routes ought to be owned by the server, not the transport.
-    static const Routes routes_;
+    // FIXME: Never initialized to anything useful.
+    Server* server_ = nullptr;
 };
 
 } // namespace

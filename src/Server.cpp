@@ -14,6 +14,7 @@
 #include "EventReceiver.h"
 #include "Server.h"
 #include "SignalReceiver.h"
+#include "StaticResponder.h"
 #include "SwitchTransport.h"
 
 namespace shitty {
@@ -67,12 +68,26 @@ Server::Server():
     impl_(std::make_unique<Impl>(this))
 {}
 
+Server& Server::addRoute(std::string_view path, Response response) {
+    routes_.addHandler(path, StaticResponder(std::move(response)));
+    return *this;
+}
+
+Server& Server::addRoute(std::string_view path, RequestHandler handler) {
+    routes_.addHandler(path, std::move(handler));
+    return *this;
+}
+
 void Server::run() {
     impl_->run();
 }
 
 int Server::epollFD() {
     return impl_->epollFD();
+}
+
+void Server::dispatch(Request&& request, Responder&& responder) {
+    routes_.dispatch(std::move(request), std::move(responder));
 }
 
 Server::~Server() {
@@ -237,7 +252,7 @@ bool Server::Impl::accept() {
 
     auto connection = std::make_unique<Connection>(epfd_, client_fd);
     connection->setConnectionManager(this);
-    connection->setTransport(std::make_unique<SwitchTransport>(*connection, server_->routes_));
+    connection->setTransport(std::make_unique<SwitchTransport>(*connection, *server_));
 
     auto [iter, inserted] = clients_.try_emplace(client_fd, std::move(connection));
 

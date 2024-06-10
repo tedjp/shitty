@@ -3,6 +3,7 @@
 #include <limits>
 #include <string>
 
+#include "../Message.h"
 #include "../ServerStream.h"
 #include "FlowControl.h"
 

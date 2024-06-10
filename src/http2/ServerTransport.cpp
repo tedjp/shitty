@@ -23,7 +23,7 @@ public:
     Impl(
             ServerTransport& parent,
             Connection& connection,
-            const Routes& routes,
+            Server& server,
             const Header* http2Settings);
 
     void onInput(StreamBuf& buf);
@@ -75,7 +75,7 @@ private:
     Connection* connection_ = nullptr;
     Settings localSettings_;
     Settings peerSettings_;
-    const Routes* routes_ = nullptr;
+    Server* server_ = nullptr;
 
     // XXX: HPACK symbols ought to be namespaced properly
     HeaderDecoder headerDecoder_;
@@ -100,9 +100,9 @@ private:
 
 ServerTransport::ServerTransport(
         Connection& connection,
-        const Routes& routes,
+        Server& server,
         const Header* http2Settings):
-    impl_(make_unique<Impl>(*this, connection, routes, http2Settings))
+    impl_(make_unique<Impl>(*this, connection, server, http2Settings))
 {}
 
 void ServerTransport::onInput(StreamBuf& buf) {
@@ -143,11 +143,11 @@ static Settings decodeBase64Settings(std::string_view b64encoded) {
 ServerTransport::Impl::Impl(
         ServerTransport& parent,
         Connection& connection,
-        const Routes& routes,
+        Server& server,
         const Header* http2Settings):
     parent_(&parent),
     connection_(&connection),
-    routes_(&routes)
+    server_(&server)
 {
     if (http2Settings != nullptr)
         peerSettings_ = decodeBase64Settings(http2Settings->second);

@@ -1,10 +1,11 @@
-#include "ServerStream.h"
 #include "StaticResponder.h"
 
-using shitty::StaticResponder;
+#include "Responder.h"
 
-void StaticResponder::onRequest(Request&& req, ServerStream *stream) {
-    stream->sendResponse(response_);
+using namespace shitty;
+
+void StaticResponder::operator()(Request&& request, Responder&& responder) {
+    responder.respond(response_);
 }
 
 void StaticResponder::addStandardHeaders() {

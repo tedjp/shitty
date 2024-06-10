@@ -1,6 +1,8 @@
 #include <cassert>
 
 #include "../http2/ServerTransport.h" // for upgrades
+#include "../Responder.h"
+#include "../Server.h"
 #include "HTTP1.h"
 #include "HTTP2Upgrader.h"
 #include "ServerTransport.h"
@@ -29,15 +31,14 @@ Upgrades staticUpgrades;
 
 ServerTransport::ServerTransport(
         Connection& connection,
-        const Routes& routes):
+        Server& server):
     shitty::http1::Transport(connection),
-    routes_(&routes)
+    server_(&server)
 {
 }
 
 void ServerTransport::sendResponse(const Response& resp) {
     sendMessage(statusLine(resp), resp.message);
-    request_handler_ = nullptr;
 }
 
 void ServerTransport::handleIncomingMessage(IncomingMessage&& msg) {
@@ -45,19 +46,11 @@ void ServerTransport::handleIncomingMessage(IncomingMessage&& msg) {
     onRequest(Request(request_line.method, request_line.path, std::move(msg.message)));
 }
 
-void ServerTransport::onRequest(Request&& req) {
-    if (tryUpgrade(req))
+void ServerTransport::onRequest(Request&& request) {
+    if (tryUpgrade(request))
         return;
 
-    if (routes_ != nullptr)
-        request_handler_ = routes_->getHandler(req);
-
-    if (!request_handler_) {
-        sendResponse(Response(404, "No handler.\n"));
-        return;
-    }
-
-    request_handler_->onRequest(std::move(req), this);
+    server_->dispatch(std::move(request), Responder(*this));
 }
 
 // Only for handling things that *must* occur at the end of the request headers,

@@ -1,10 +1,10 @@
-#include <Server.h>
-#include <StaticResponder.h>
+#include "Response.h"
+#include "Server.h"
 
 using namespace shitty;
 
 int main() {
     Server()
-        .addStaticHandler("/", "Hello, world!\n")
+        .addRoute("/", Response("Hello, world!\n"))
         .run();
 }

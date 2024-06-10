@@ -25,7 +25,7 @@ public:
     // settings - base64-encoded HTTP2-Settings header
     ServerTransport(
             Connection& connection,
-            const Routes& routes,
+            Server& server,
             const Header* http2Settings = nullptr);
     ~ServerTransport();
 

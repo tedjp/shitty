@@ -1,18 +1,27 @@
 #include "Routes.h"
 
+#include "Responder.h"
+
 using namespace shitty;
 
-std::unique_ptr<RequestHandler>
-Routes::getHandler(const Request& request) const
-{
-    for (const auto& route: routes_) {
-        const auto& path = route->path();
-        if (request.path().compare(0, path.size(), path) == 0) {
-            return route->getHandler();
+namespace {
+    void defaultHandler(Request&&, Responder&& responder) {
+        static const Response response(404, "No handler for this path.\n");
+        responder.respond(response);
+    }
+}
+
+void Routes::addHandler(std::string_view path, RequestHandler&& handler) {
+    handlers_.emplace_back(path, std::move(handler));
+}
+
+void Routes::dispatch(Request&& request, Responder&& responder) {
+    for (const auto& [path, handler] : handlers_) {
+        if (request.path().starts_with(path)) {
+            handler(std::move(request), std::move(responder));
+            return;
         }
     }
 
-    return std::make_unique<StaticResponder>(
-            404,
-            "No handler for this path.\n");
+    // Default handler
 }

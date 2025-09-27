@@ -70,4 +70,4 @@ Includes a functional implementation of HPACK, HTTP/2's header
 compression/decompression algorithm. Integration and implementation of HTTP/2 is
 underway.
 
-See [dependencies/hpack](dependencies/hpack) for the HPACK implementation.
+See [src/dependencies/hpack](src/dependencies/hpack) for the HPACK implementation.

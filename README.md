@@ -2,15 +2,15 @@
 
 ## Examples
 
-### [HelloWorld](HelloWorld.cpp)
+### [HelloWorld](src/HelloWorld.cpp)
 
 A simple example of serving static responses.
 
-### [ProxyServer](ProxyServer.cpp)
+### [ProxyServer](src/ProxyServer.cpp)
 
 A simple HTTP proxy.
 
-### [PrintRequestServer](PrintRequestServer.cpp)
+### [PrintRequestServer](src/PrintRequestServer.cpp)
 
 Prints incoming requests.
 

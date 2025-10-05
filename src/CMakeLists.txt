@@ -62,6 +62,7 @@ target_sources(shitty
 	Routes.cpp
 	Routes.h
 	safefd.h
+	ServerConfig.h
 	Server.cpp
 	Server.h
 	ServerStream.h

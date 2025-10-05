@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Routes.h"
+#include "ServerConfig.h"
 
 namespace shitty {
 
@@ -12,7 +13,8 @@ class Response;
 class Server {
 public:
     Server();
-    ~Server();
+    explicit Server(const ServerConfig& config);
+    virtual ~Server();
 
     // Add a route with a static response.
     Server& addRoute(std::string_view path, Response response);
@@ -29,7 +31,8 @@ public:
 
 private:
     // Config
-    // TODO: Move all config into a separate class.
+    ServerConfig config_;
+
     Routes routes_;
 
     class Impl;

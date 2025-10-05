@@ -68,6 +68,11 @@ Server::Server():
     impl_(std::make_unique<Impl>(this))
 {}
 
+Server::Server(const ServerConfig& config):
+    config_(config),
+    impl_(std::make_unique<Impl>(this))
+{}
+
 Server& Server::addRoute(std::string_view path, Response response) {
     routes_.addHandler(path, StaticResponder(std::move(response)));
     return *this;
@@ -137,7 +142,12 @@ void Server::Impl::setup() {
 
 void Server::Impl::bind()
 {
-    const std::array try_ports = std::to_array<const uint16_t>({ 80, 8080 });
+    std::span<const uint16_t> try_ports = server_->config_.viewBindPorts();
+    if (try_ports.empty())
+    {
+        static const uint16_t defaultBindPort = 0;
+        try_ports = std::span(&defaultBindPort, 1);
+    }
 
     struct sockaddr_in6 sin6 = {};
     sin6.sin6_family = AF_INET6;
